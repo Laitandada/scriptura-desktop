@@ -1,0 +1,155 @@
+
+========================================
+📖 Scriptura Universal Importer (NKJV)
+========================================
+
+📖 Reading Bible dataset from /Users/dada/Desktop/Scriptura/versions/NKJV/NKJV_bible.json...
+
+📊 Dataset statistics
+   Books:    66
+   Chapters: 1189
+   Verses:   31102
+
+🗄️  Importing into PostgreSQL...
+
+✓ Translation: New King James Version (NKJV)
+   Imported 1,000 verses...
+✓ 01/66 Genesis
+   Imported 2,000 verses...
+✓ 02/66 Exodus
+   Imported 3,000 verses...
+✓ 03/66 Leviticus
+   Imported 4,000 verses...
+✓ 04/66 Numbers
+   Imported 5,000 verses...
+✓ 05/66 Deuteronomy
+   Imported 6,000 verses...
+✓ 06/66 Joshua
+   Imported 7,000 verses...
+✓ 07/66 Judges
+
+✓ 08/66 Ruth
+   Imported 8,000 verses...
+✓ 09/66 1 Samuel
+
+✓ 10/66 2 Samuel
+   Imported 9,000 verses...
+✓ 11/66 1 Kings
+   Imported 10,000 verses...
+✓ 12/66 2 Kings
+   Imported 11,000 verses...
+✓ 13/66 1 Chronicles
+   Imported 12,000 verses...
+✓ 14/66 2 Chronicles
+
+✓ 15/66 Ezra
+
+✓ 16/66 Nehemiah
+
+✓ 17/66 Esther
+   Imported 13,000 verses...
+✓ 18/66 Job
+   Imported 14,000 verses...   Imported 15,000 verses...   Imported 16,000 verses...
+✓ 19/66 Psalm
+   Imported 17,000 verses...
+✓ 20/66 Proverbs
+
+✓ 21/66 Ecclesiastes
+
+✓ 22/66 Song Of Solomon
+   Imported 18,000 verses...
+✓ 23/66 Isaiah
+   Imported 19,000 verses...   Imported 20,000 verses...
+✓ 24/66 Jeremiah
+
+✓ 25/66 Lamentations
+   Imported 21,000 verses...
+✓ 26/66 Ezekiel
+   Imported 22,000 verses...
+✓ 27/66 Daniel
+
+✓ 28/66 Hosea
+
+✓ 29/66 Joel
+
+✓ 30/66 Amos
+
+✓ 31/66 Obadiah
+
+✓ 32/66 Jonah
+
+✓ 33/66 Micah
+
+✓ 34/66 Nahum
+
+✓ 35/66 Habakkuk
+
+✓ 36/66 Zephaniah
+
+✓ 37/66 Haggai
+   Imported 23,000 verses...
+✓ 38/66 Zechariah
+
+✓ 39/66 Malachi
+   Imported 24,000 verses...
+✓ 40/66 Matthew
+
+✓ 41/66 Mark
+   Imported 25,000 verses...   Imported 26,000 verses...
+✓ 42/66 Luke
+
+✓ 43/66 John
+   Imported 27,000 verses...
+✓ 44/66 Acts
+   Imported 28,000 verses...
+✓ 45/66 Romans
+
+✓ 46/66 1 Corinthians
+   Imported 29,000 verses...
+✓ 47/66 2 Corinthians
+
+✓ 48/66 Galatians
+
+✓ 49/66 Ephesians
+
+✓ 50/66 Philippians
+
+✓ 51/66 Colossians
+
+✓ 52/66 1 Thessalonians
+
+✓ 53/66 2 Thessalonians
+
+✓ 54/66 1 Timothy
+
+✓ 55/66 2 Timothy
+
+✓ 56/66 Titus
+
+✓ 57/66 Philemon
+   Imported 30,000 verses...
+✓ 58/66 Hebrews
+
+✓ 59/66 James
+
+✓ 60/66 1 Peter
+
+✓ 61/66 2 Peter
+
+✓ 62/66 1 John
+
+✓ 63/66 2 John
+
+✓ 64/66 3 John
+
+✓ 65/66 Jude
+   Imported 31,000 verses...
+✓ 66/66 Revelation
+
+✓ Imported 1,189 chapters
+✓ Imported 31,102 verses
+
+========================================
+✅ NKJV import completed successfully
+========================================
+

@@ -1,0 +1,587 @@
+
+========================================
+📖 Scriptura Bible Generator
+========================================
+
+
+========================================
+📖 Generating NIV Bible
+========================================
+Output: /Users/dada/Desktop/Scriptura/versions/NIV
+
+📚 Found 43 existing files (will skip downloading them)
+
+[1/66] Genesis (Already downloaded)
+
+[2/66] Exodus (Already downloaded)
+
+[3/66] Leviticus (Already downloaded)
+
+[4/66] Numbers (Already downloaded)
+
+[5/66] Deuteronomy (Already downloaded)
+
+[6/66] Joshua (Already downloaded)
+
+[7/66] Judges (Already downloaded)
+
+[8/66] Ruth (Already downloaded)
+
+[9/66] 1 Samuel (Already downloaded)
+
+[10/66] 2 Samuel (Already downloaded)
+
+[11/66] 1 Kings (Already downloaded)
+
+[12/66] 2 Kings (Already downloaded)
+
+[13/66] 1 Chronicles (Already downloaded)
+
+[14/66] 2 Chronicles (Already downloaded)
+
+[15/66] Ezra (Already downloaded)
+
+[16/66] Nehemiah (Already downloaded)
+
+[17/66] Esther (Already downloaded)
+
+[18/66] Job (Already downloaded)
+
+[19/66] Psalm (Already downloaded)
+
+[20/66] Proverbs (Already downloaded)
+
+[21/66] Ecclesiastes (Already downloaded)
+
+[22/66] Song Of Solomon (Already downloaded)
+
+[23/66] Isaiah (Already downloaded)
+
+[24/66] Jeremiah (Already downloaded)
+
+[25/66] Lamentations (Already downloaded)
+
+[26/66] Ezekiel (Already downloaded)
+
+[27/66] Daniel (Already downloaded)
+
+[28/66] Hosea (Already downloaded)
+
+[29/66] Joel (Already downloaded)
+
+[30/66] Amos (Already downloaded)
+
+[31/66] Obadiah (Already downloaded)
+
+[32/66] Jonah (Already downloaded)
+
+[33/66] Micah (Already downloaded)
+
+[34/66] Nahum (Already downloaded)
+
+[35/66] Habakkuk (Already downloaded)
+
+[36/66] Zephaniah (Already downloaded)
+
+[37/66] Haggai (Already downloaded)
+
+[38/66] Zechariah (Already downloaded)
+
+[39/66] Malachi (Already downloaded)
+
+[40/66] Matthew (Already downloaded)
+
+[41/66] Mark (Already downloaded)
+
+[42/66] Luke (Already downloaded)
+
+[43/66] John (Already downloaded)
+
+[44/66] Acts
+
+📖 Acts — 28 chapters
+   Chapter 1/28
+      Request 1/3: Acts 1
+   Chapter 2/28
+      Request 1/3: Acts 2
+   Chapter 3/28
+      Request 1/3: Acts 3
+   Chapter 4/28
+      Request 1/3: Acts 4
+   Chapter 5/28
+      Request 1/3: Acts 5
+   Chapter 6/28
+      Request 1/3: Acts 6
+   Chapter 7/28
+      Request 1/3: Acts 7
+   Chapter 8/28
+      Request 1/3: Acts 8
+   Chapter 9/28
+      Request 1/3: Acts 9
+   Chapter 10/28
+      Request 1/3: Acts 10
+   Chapter 11/28
+      Request 1/3: Acts 11
+   Chapter 12/28
+      Request 1/3: Acts 12
+   Chapter 13/28
+      Request 1/3: Acts 13
+   Chapter 14/28
+      Request 1/3: Acts 14
+   Chapter 15/28
+      Request 1/3: Acts 15
+   Chapter 16/28
+      Request 1/3: Acts 16
+   Chapter 17/28
+      Request 1/3: Acts 17
+   Chapter 18/28
+      Request 1/3: Acts 18
+   Chapter 19/28
+      Request 1/3: Acts 19
+   Chapter 20/28
+      Request 1/3: Acts 20
+   Chapter 21/28
+      Request 1/3: Acts 21
+   Chapter 22/28
+      Request 1/3: Acts 22
+   Chapter 23/28
+      Request 1/3: Acts 23
+   Chapter 24/28
+      Request 1/3: Acts 24
+   Chapter 25/28
+      Request 1/3: Acts 25
+   Chapter 26/28
+      Request 1/3: Acts 26
+   Chapter 27/28
+      Request 1/3: Acts 27
+   Chapter 28/28
+      Request 1/3: Acts 28
+   ✅ Saved /Users/dada/Desktop/Scriptura/versions/NIV/NIV_books/Acts.json
+
+[45/66] Romans
+
+📖 Romans — 16 chapters
+   Chapter 1/16
+      Request 1/3: Romans 1
+   Chapter 2/16
+      Request 1/3: Romans 2
+   Chapter 3/16
+      Request 1/3: Romans 3
+   Chapter 4/16
+      Request 1/3: Romans 4
+   Chapter 5/16
+      Request 1/3: Romans 5
+   Chapter 6/16
+      Request 1/3: Romans 6
+   Chapter 7/16
+      Request 1/3: Romans 7
+   Chapter 8/16
+      Request 1/3: Romans 8
+   Chapter 9/16
+      Request 1/3: Romans 9
+   Chapter 10/16
+      Request 1/3: Romans 10
+   Chapter 11/16
+      Request 1/3: Romans 11
+   Chapter 12/16
+      Request 1/3: Romans 12
+   Chapter 13/16
+      Request 1/3: Romans 13
+   Chapter 14/16
+      Request 1/3: Romans 14
+   Chapter 15/16
+      Request 1/3: Romans 15
+   Chapter 16/16
+      Request 1/3: Romans 16
+   ✅ Saved /Users/dada/Desktop/Scriptura/versions/NIV/NIV_books/Romans.json
+
+[46/66] 1 Corinthians
+
+📖 1 Corinthians — 16 chapters
+   Chapter 1/16
+      Request 1/3: 1 Corinthians 1
+   Chapter 2/16
+      Request 1/3: 1 Corinthians 2
+   Chapter 3/16
+      Request 1/3: 1 Corinthians 3
+   Chapter 4/16
+      Request 1/3: 1 Corinthians 4
+      Request failed. Retrying in 750ms...
+      Request 2/3: 1 Corinthians 4
+      Request failed. Retrying in 1500ms...
+      Request 3/3: 1 Corinthians 4
+   ❌ 1 Corinthians 4 attempt 1: Failed to retrieve "1 Corinthians 4" after 3 attempts: HTTP 500 Internal Server Error
+      Request 1/3: 1 Corinthians 4
+      Request failed. Retrying in 750ms...
+      Request 2/3: 1 Corinthians 4
+      Request failed. Retrying in 1500ms...
+      Request 3/3: 1 Corinthians 4
+   ❌ 1 Corinthians 4 attempt 2: Failed to retrieve "1 Corinthians 4" after 3 attempts: HTTP 500 Internal Server Error
+      Request 1/3: 1 Corinthians 4
+      Request failed. Retrying in 750ms...
+      Request 2/3: 1 Corinthians 4
+      Request failed. Retrying in 1500ms...
+      Request 3/3: 1 Corinthians 4
+   Chapter 5/16
+      Request 1/3: 1 Corinthians 5
+   Chapter 6/16
+      Request 1/3: 1 Corinthians 6
+   Chapter 7/16
+      Request 1/3: 1 Corinthians 7
+   Chapter 8/16
+      Request 1/3: 1 Corinthians 8
+   Chapter 9/16
+      Request 1/3: 1 Corinthians 9
+   Chapter 10/16
+      Request 1/3: 1 Corinthians 10
+   Chapter 11/16
+      Request 1/3: 1 Corinthians 11
+   Chapter 12/16
+      Request 1/3: 1 Corinthians 12
+   Chapter 13/16
+      Request 1/3: 1 Corinthians 13
+   Chapter 14/16
+      Request 1/3: 1 Corinthians 14
+   Chapter 15/16
+      Request 1/3: 1 Corinthians 15
+   Chapter 16/16
+      Request 1/3: 1 Corinthians 16
+   ✅ Saved /Users/dada/Desktop/Scriptura/versions/NIV/NIV_books/1 Corinthians.json
+
+[47/66] 2 Corinthians
+
+📖 2 Corinthians — 13 chapters
+   Chapter 1/13
+      Request 1/3: 2 Corinthians 1
+   Chapter 2/13
+      Request 1/3: 2 Corinthians 2
+   Chapter 3/13
+      Request 1/3: 2 Corinthians 3
+   Chapter 4/13
+      Request 1/3: 2 Corinthians 4
+   Chapter 5/13
+      Request 1/3: 2 Corinthians 5
+   Chapter 6/13
+      Request 1/3: 2 Corinthians 6
+   Chapter 7/13
+      Request 1/3: 2 Corinthians 7
+   Chapter 8/13
+      Request 1/3: 2 Corinthians 8
+   Chapter 9/13
+      Request 1/3: 2 Corinthians 9
+   Chapter 10/13
+      Request 1/3: 2 Corinthians 10
+   Chapter 11/13
+      Request 1/3: 2 Corinthians 11
+   Chapter 12/13
+      Request 1/3: 2 Corinthians 12
+   Chapter 13/13
+      Request 1/3: 2 Corinthians 13
+   ✅ Saved /Users/dada/Desktop/Scriptura/versions/NIV/NIV_books/2 Corinthians.json
+
+[48/66] Galatians
+
+📖 Galatians — 6 chapters
+   Chapter 1/6
+      Request 1/3: Galatians 1
+   Chapter 2/6
+      Request 1/3: Galatians 2
+   Chapter 3/6
+      Request 1/3: Galatians 3
+   Chapter 4/6
+      Request 1/3: Galatians 4
+   Chapter 5/6
+      Request 1/3: Galatians 5
+   Chapter 6/6
+      Request 1/3: Galatians 6
+   ✅ Saved /Users/dada/Desktop/Scriptura/versions/NIV/NIV_books/Galatians.json
+
+[49/66] Ephesians
+
+📖 Ephesians — 6 chapters
+   Chapter 1/6
+      Request 1/3: Ephesians 1
+   Chapter 2/6
+      Request 1/3: Ephesians 2
+   Chapter 3/6
+      Request 1/3: Ephesians 3
+   Chapter 4/6
+      Request 1/3: Ephesians 4
+   Chapter 5/6
+      Request 1/3: Ephesians 5
+   Chapter 6/6
+      Request 1/3: Ephesians 6
+   ✅ Saved /Users/dada/Desktop/Scriptura/versions/NIV/NIV_books/Ephesians.json
+
+[50/66] Philippians
+
+📖 Philippians — 4 chapters
+   Chapter 1/4
+      Request 1/3: Philippians 1
+   Chapter 2/4
+      Request 1/3: Philippians 2
+   Chapter 3/4
+      Request 1/3: Philippians 3
+   Chapter 4/4
+      Request 1/3: Philippians 4
+   ✅ Saved /Users/dada/Desktop/Scriptura/versions/NIV/NIV_books/Philippians.json
+
+[51/66] Colossians
+
+📖 Colossians — 4 chapters
+   Chapter 1/4
+      Request 1/3: Colossians 1
+   Chapter 2/4
+      Request 1/3: Colossians 2
+   Chapter 3/4
+      Request 1/3: Colossians 3
+   Chapter 4/4
+      Request 1/3: Colossians 4
+   ✅ Saved /Users/dada/Desktop/Scriptura/versions/NIV/NIV_books/Colossians.json
+
+[52/66] 1 Thessalonians
+
+📖 1 Thessalonians — 5 chapters
+   Chapter 1/5
+      Request 1/3: 1 Thessalonians 1
+   Chapter 2/5
+      Request 1/3: 1 Thessalonians 2
+   Chapter 3/5
+      Request 1/3: 1 Thessalonians 3
+   Chapter 4/5
+      Request 1/3: 1 Thessalonians 4
+   Chapter 5/5
+      Request 1/3: 1 Thessalonians 5
+   ✅ Saved /Users/dada/Desktop/Scriptura/versions/NIV/NIV_books/1 Thessalonians.json
+
+[53/66] 2 Thessalonians
+
+📖 2 Thessalonians — 3 chapters
+   Chapter 1/3
+      Request 1/3: 2 Thessalonians 1
+   Chapter 2/3
+      Request 1/3: 2 Thessalonians 2
+   Chapter 3/3
+      Request 1/3: 2 Thessalonians 3
+   ✅ Saved /Users/dada/Desktop/Scriptura/versions/NIV/NIV_books/2 Thessalonians.json
+
+[54/66] 1 Timothy
+
+📖 1 Timothy — 6 chapters
+   Chapter 1/6
+      Request 1/3: 1 Timothy 1
+   Chapter 2/6
+      Request 1/3: 1 Timothy 2
+   Chapter 3/6
+      Request 1/3: 1 Timothy 3
+   Chapter 4/6
+      Request 1/3: 1 Timothy 4
+   Chapter 5/6
+      Request 1/3: 1 Timothy 5
+   Chapter 6/6
+      Request 1/3: 1 Timothy 6
+   ✅ Saved /Users/dada/Desktop/Scriptura/versions/NIV/NIV_books/1 Timothy.json
+
+[55/66] 2 Timothy
+
+📖 2 Timothy — 4 chapters
+   Chapter 1/4
+      Request 1/3: 2 Timothy 1
+   Chapter 2/4
+      Request 1/3: 2 Timothy 2
+   Chapter 3/4
+      Request 1/3: 2 Timothy 3
+   Chapter 4/4
+      Request 1/3: 2 Timothy 4
+   ✅ Saved /Users/dada/Desktop/Scriptura/versions/NIV/NIV_books/2 Timothy.json
+
+[56/66] Titus
+
+📖 Titus — 3 chapters
+   Chapter 1/3
+      Request 1/3: Titus 1
+   Chapter 2/3
+      Request 1/3: Titus 2
+   Chapter 3/3
+      Request 1/3: Titus 3
+   ✅ Saved /Users/dada/Desktop/Scriptura/versions/NIV/NIV_books/Titus.json
+
+[57/66] Philemon
+
+📖 Philemon — 1 chapters
+   Chapter 1/1
+      Request 1/3: Philemon 1
+   ✅ Saved /Users/dada/Desktop/Scriptura/versions/NIV/NIV_books/Philemon.json
+
+[58/66] Hebrews
+
+📖 Hebrews — 13 chapters
+   Chapter 1/13
+      Request 1/3: Hebrews 1
+   Chapter 2/13
+      Request 1/3: Hebrews 2
+   Chapter 3/13
+      Request 1/3: Hebrews 3
+   Chapter 4/13
+      Request 1/3: Hebrews 4
+   Chapter 5/13
+      Request 1/3: Hebrews 5
+   Chapter 6/13
+      Request 1/3: Hebrews 6
+   Chapter 7/13
+      Request 1/3: Hebrews 7
+   Chapter 8/13
+      Request 1/3: Hebrews 8
+   Chapter 9/13
+      Request 1/3: Hebrews 9
+   Chapter 10/13
+      Request 1/3: Hebrews 10
+   Chapter 11/13
+      Request 1/3: Hebrews 11
+   Chapter 12/13
+      Request 1/3: Hebrews 12
+   Chapter 13/13
+      Request 1/3: Hebrews 13
+   ✅ Saved /Users/dada/Desktop/Scriptura/versions/NIV/NIV_books/Hebrews.json
+
+[59/66] James
+
+📖 James — 5 chapters
+   Chapter 1/5
+      Request 1/3: James 1
+   Chapter 2/5
+      Request 1/3: James 2
+   Chapter 3/5
+      Request 1/3: James 3
+   Chapter 4/5
+      Request 1/3: James 4
+   Chapter 5/5
+      Request 1/3: James 5
+   ✅ Saved /Users/dada/Desktop/Scriptura/versions/NIV/NIV_books/James.json
+
+[60/66] 1 Peter
+
+📖 1 Peter — 5 chapters
+   Chapter 1/5
+      Request 1/3: 1 Peter 1
+   Chapter 2/5
+      Request 1/3: 1 Peter 2
+   Chapter 3/5
+      Request 1/3: 1 Peter 3
+   Chapter 4/5
+      Request 1/3: 1 Peter 4
+   Chapter 5/5
+      Request 1/3: 1 Peter 5
+   ✅ Saved /Users/dada/Desktop/Scriptura/versions/NIV/NIV_books/1 Peter.json
+
+[61/66] 2 Peter
+
+📖 2 Peter — 3 chapters
+   Chapter 1/3
+      Request 1/3: 2 Peter 1
+   Chapter 2/3
+      Request 1/3: 2 Peter 2
+   Chapter 3/3
+      Request 1/3: 2 Peter 3
+   ✅ Saved /Users/dada/Desktop/Scriptura/versions/NIV/NIV_books/2 Peter.json
+
+[62/66] 1 John
+
+📖 1 John — 5 chapters
+   Chapter 1/5
+      Request 1/3: 1 John 1
+   Chapter 2/5
+      Request 1/3: 1 John 2
+   Chapter 3/5
+      Request 1/3: 1 John 3
+   Chapter 4/5
+      Request 1/3: 1 John 4
+   Chapter 5/5
+      Request 1/3: 1 John 5
+   ✅ Saved /Users/dada/Desktop/Scriptura/versions/NIV/NIV_books/1 John.json
+
+[63/66] 2 John
+
+📖 2 John — 1 chapters
+   Chapter 1/1
+      Request 1/3: 2 John 1
+   ✅ Saved /Users/dada/Desktop/Scriptura/versions/NIV/NIV_books/2 John.json
+
+[64/66] 3 John
+
+📖 3 John — 1 chapters
+   Chapter 1/1
+      Request 1/3: 3 John 1
+   ✅ Saved /Users/dada/Desktop/Scriptura/versions/NIV/NIV_books/3 John.json
+
+[65/66] Jude
+
+📖 Jude — 1 chapters
+   Chapter 1/1
+      Request 1/3: Jude 1
+   ✅ Saved /Users/dada/Desktop/Scriptura/versions/NIV/NIV_books/Jude.json
+
+[66/66] Revelation
+
+📖 Revelation — 22 chapters
+   Chapter 1/22
+      Request 1/3: Revelation 1
+   Chapter 2/22
+      Request 1/3: Revelation 2
+   Chapter 3/22
+      Request 1/3: Revelation 3
+   Chapter 4/22
+      Request 1/3: Revelation 4
+   Chapter 5/22
+      Request 1/3: Revelation 5
+   Chapter 6/22
+      Request 1/3: Revelation 6
+   Chapter 7/22
+      Request 1/3: Revelation 7
+   Chapter 8/22
+      Request 1/3: Revelation 8
+   Chapter 9/22
+      Request 1/3: Revelation 9
+   Chapter 10/22
+      Request 1/3: Revelation 10
+   Chapter 11/22
+      Request 1/3: Revelation 11
+   Chapter 12/22
+      Request 1/3: Revelation 12
+   Chapter 13/22
+      Request 1/3: Revelation 13
+   Chapter 14/22
+      Request 1/3: Revelation 14
+   Chapter 15/22
+      Request 1/3: Revelation 15
+   Chapter 16/22
+      Request 1/3: Revelation 16
+   Chapter 17/22
+      Request 1/3: Revelation 17
+   Chapter 18/22
+      Request 1/3: Revelation 18
+   Chapter 19/22
+      Request 1/3: Revelation 19
+   Chapter 20/22
+      Request 1/3: Revelation 20
+   Chapter 21/22
+      Request 1/3: Revelation 21
+   Chapter 22/22
+      Request 1/3: Revelation 22
+   ✅ Saved /Users/dada/Desktop/Scriptura/versions/NIV/NIV_books/Revelation.json
+
+📦 Combining books...
+✅ Combined Bible written to:
+/Users/dada/Desktop/Scriptura/versions/NIV/NIV_bible.json
+
+========================================
+📊 Bible validation
+========================================
+Books:    66
+Chapters: 1189
+Verses:   31087
+========================================
+
+✅ Bible validation passed
+
+🎉 NIV generation complete!

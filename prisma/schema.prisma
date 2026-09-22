@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model BibleTranslation {
+  id           String       @id @default(uuid())
+  name         String       // e.g., "World English Bible"
+  abbreviation String       @unique // e.g., "WEB"
+  books        BibleBook[]
+  verses       BibleVerse[]
+}
+
+model BibleBook {
+  id            String           @id @default(uuid())
+  translationId String
+  translation   BibleTranslation @relation(fields: [translationId], references: [id], onDelete: Cascade)
+  name          String           // e.g., "John"
+  testament     String           // e.g., "OT" or "NT"
+  order         Int              // Traditional ordering (Genesis = 1)
+  verses        BibleVerse[]
+
+  @@unique([translationId, name])
+}
+
+model BibleVerse {
+  id            String           @id @default(uuid())
+  translationId String
+  translation   BibleTranslation @relation(fields: [translationId], references: [id], onDelete: Cascade)
+  bookId        String
+  book          BibleBook        @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  chapter       Int
+  verse         Int
+  text          String
+
+  @@unique([translationId, bookId, chapter, verse])
+  @@index([translationId, bookId, chapter])
+}
+
+model Media {
+  id        String            @id @default(uuid())
+  filename  String
+  type      String            // "IMAGE" or "VIDEO"
+  path      String            // Path in public/media
+  createdAt DateTime          @default(now())
+  events    ProjectionEvent[]
+}
+
+model PresentationSession {
+  id        String            @id @default(uuid())
+  name      String            // e.g., "Sunday Service Sept 13"
+  startTime DateTime          @default(now())
+  endTime   DateTime?
+  events    ProjectionEvent[]
+}
+
+model ProjectionEvent {
+  id             String              @id @default(uuid())
+  sessionId      String
+  session        PresentationSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  type           String              // "scripture", "black", "clear"
+  reference      String?             // e.g., "John 3:16"
+  translation    String?
+  text           String?
+  mediaId        String?
+  media          Media?              @relation(fields: [mediaId], references: [id], onDelete: SetNull)
+  backgroundType String?             // "image", "video", "none"
+  backgroundUrl  String?
+  fontSize       Int?
+  overlayOpacity Int?
+  showReference  Boolean?
+  alignment      String?             @default("center")
+  fontWeight     String?             @default("bold")
+  textShadow     String?             @default("medium")
+  textOutline    String?             @default("none")
+  outlineColor   String?             @default("#000000")
+  textColor      String?             @default("#ffffff")
+  timestamp      DateTime            @default(now())
+}
+
+model CurrentState {
+  id             String  @id @default("singleton")
+  type           String  // "scripture", "black", "clear"
+  reference      String?
+  translation    String?
+  text           String?
+  backgroundType String? // "image", "video", "none"
+  backgroundUrl  String?
+  fontSize       Int     @default(90)
+  overlayOpacity Int     @default(50)
+  showReference  Boolean @default(true)
+  alignment      String? @default("center")
+  fontWeight     String? @default("bold")
+  textShadow     String? @default("medium")
+  textOutline    String? @default("none")
+  outlineColor   String? @default("#000000")
+  textColor      String? @default("#ffffff")
+  updatedAt      DateTime @updatedAt
+}

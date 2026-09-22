@@ -1,0 +1,156 @@
+
+========================================
+📖 Scriptura Universal Importer (MSG)
+========================================
+
+📖 Reading Bible dataset from /Users/dada/Desktop/Scriptura/versions/MSG/MSG_bible.json...
+
+📊 Dataset statistics
+   Books:    66
+   Chapters: 1189
+   Verses:   13118
+   ⚠️ Warning: Verse count is 13118 instead of standard 31102. This is normal for modern translations.
+
+🗄️  Importing into PostgreSQL...
+
+✓ Translation: The Message (MSG)
+
+✓ 01/66 Genesis
+   Imported 1,000 verses...
+✓ 02/66 Exodus
+
+✓ 03/66 Leviticus
+   Imported 2,000 verses...
+✓ 04/66 Numbers
+
+✓ 05/66 Deuteronomy
+
+✓ 06/66 Joshua
+   Imported 3,000 verses...
+✓ 07/66 Judges
+
+✓ 08/66 Ruth
+
+✓ 09/66 1 Samuel
+
+✓ 10/66 2 Samuel
+   Imported 4,000 verses...
+✓ 11/66 1 Kings
+
+✓ 12/66 2 Kings
+   Imported 5,000 verses...
+✓ 13/66 1 Chronicles
+
+✓ 14/66 2 Chronicles
+
+✓ 15/66 Ezra
+
+✓ 16/66 Nehemiah
+
+✓ 17/66 Esther
+
+✓ 18/66 Job
+   Imported 6,000 verses...
+✓ 19/66 Psalm
+   Imported 7,000 verses...
+✓ 20/66 Proverbs
+
+✓ 21/66 Ecclesiastes
+
+✓ 22/66 Song Of Solomon
+   Imported 8,000 verses...
+✓ 23/66 Isaiah
+
+✓ 24/66 Jeremiah
+
+✓ 25/66 Lamentations
+   Imported 9,000 verses...
+✓ 26/66 Ezekiel
+
+✓ 27/66 Daniel
+
+✓ 28/66 Hosea
+
+✓ 29/66 Joel
+
+✓ 30/66 Amos
+
+✓ 31/66 Obadiah
+
+✓ 32/66 Jonah
+
+✓ 33/66 Micah
+
+✓ 34/66 Nahum
+
+✓ 35/66 Habakkuk
+
+✓ 36/66 Zephaniah
+
+✓ 37/66 Haggai
+
+✓ 38/66 Zechariah
+
+✓ 39/66 Malachi
+   Imported 10,000 verses...
+✓ 40/66 Matthew
+
+✓ 41/66 Mark
+   Imported 11,000 verses...
+✓ 42/66 Luke
+
+✓ 43/66 John
+
+✓ 44/66 Acts
+   Imported 12,000 verses...
+✓ 45/66 Romans
+
+✓ 46/66 1 Corinthians
+
+✓ 47/66 2 Corinthians
+
+✓ 48/66 Galatians
+
+✓ 49/66 Ephesians
+
+✓ 50/66 Philippians
+
+✓ 51/66 Colossians
+
+✓ 52/66 1 Thessalonians
+
+✓ 53/66 2 Thessalonians
+
+✓ 54/66 1 Timothy
+
+✓ 55/66 2 Timothy
+
+✓ 56/66 Titus
+
+✓ 57/66 Philemon
+
+✓ 58/66 Hebrews
+
+✓ 59/66 James
+
+✓ 60/66 1 Peter
+
+✓ 61/66 2 Peter
+
+✓ 62/66 1 John
+
+✓ 63/66 2 John
+
+✓ 64/66 3 John
+
+✓ 65/66 Jude
+   Imported 13,000 verses...
+✓ 66/66 Revelation
+
+✓ Imported 1,189 chapters
+✓ Imported 13,118 verses
+
+========================================
+✅ MSG import completed successfully
+========================================
+

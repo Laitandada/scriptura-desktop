@@ -1,0 +1,158 @@
+import { create } from 'zustand';
+import { cleanScriptureText } from '@/lib/bible/cleaner';
+
+export type PresentationStateType = 'scripture' | 'black' | 'clear';
+export type BackgroundType = 'image' | 'video' | 'none';
+export type TextAlignment = 'top' | 'center' | 'bottom';
+export type FontWeight = 'normal' | 'medium' | 'semibold' | 'bold' | 'black';
+export type TextShadowStyle = 'none' | 'subtle' | 'medium' | 'strong' | 'glow';
+export type TextOutlineStyle = 'none' | 'thin-dark' | 'thick-dark' | 'thin-light';
+
+export interface PresentationSettings {
+  fontSize: number;
+  overlayOpacity: number;
+  showReference: boolean;
+  alignment?: TextAlignment;
+  fontWeight?: FontWeight;
+  textShadow?: TextShadowStyle;
+  textOutline?: TextOutlineStyle;
+  outlineColor?: string;
+  textColor?: string;
+}
+
+export interface PresentationStateData {
+  type: PresentationStateType;
+  scripture?: {
+    reference: string;
+    translation: string;
+    text: string;
+  };
+  background?: {
+    type: BackgroundType;
+    url?: string;
+  };
+  settings: PresentationSettings;
+}
+
+interface PresentationStore {
+  activeSessionId: string | null;
+  setActiveSessionId: (id: string | null) => void;
+  activeTranslationId: string | null;
+  setActiveTranslationId: (id: string | null) => void;
+  state: PresentationStateData;
+  setState: (newState: Partial<PresentationStateData>) => void;
+  projectScripture: (reference: string, translation: string, text: string) => void;
+  blackScreen: () => void;
+  clearScreen: () => void;
+  setBackground: (type: BackgroundType, url?: string) => void;
+  sendVideoCommand: (command: 'play' | 'pause' | 'seek' | 'loop', value?: any) => void;
+}
+
+const defaultState: PresentationStateData = {
+  type: 'clear',
+  settings: {
+    fontSize: 90,
+    overlayOpacity: 50,
+    showReference: true,
+    alignment: 'center',
+    fontWeight: 'bold',
+    textShadow: 'medium',
+    textOutline: 'none',
+    outlineColor: '#000000',
+    textColor: '#ffffff',
+  },
+};
+
+const channelName = 'scriptura-presentation-sync';
+let broadcastChannel: BroadcastChannel | null = null;
+
+if (typeof window !== 'undefined') {
+  broadcastChannel = new BroadcastChannel(channelName);
+}
+
+export const usePresentationStore = create<PresentationStore>((set, get) => {
+  // Listen for messages from other tabs
+  if (broadcastChannel) {
+    broadcastChannel.onmessage = (event) => {
+      if (event.data && event.data.type === 'SYNC_STATE') {
+        set({ state: event.data.state });
+      }
+    };
+  }
+
+  const syncState = (newState: PresentationStateData, sessionId: string | null) => {
+    // Send to database first for atomic update + history logging
+    if (typeof window !== 'undefined') {
+      fetch('/api/presentation/project', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: newState, sessionId }),
+      }).then(() => {
+         // Broadcast instantly after DB accepts it (or optimistically)
+         if (broadcastChannel) {
+           broadcastChannel.postMessage({ type: 'SYNC_STATE', state: newState });
+         }
+      }).catch(console.error);
+    }
+  };
+
+  return {
+    activeSessionId: null,
+    setActiveSessionId: (id) => set({ activeSessionId: id }),
+    activeTranslationId: null,
+    setActiveTranslationId: (id) => set({ activeTranslationId: id }),
+    state: defaultState,
+    setState: (updates) => {
+      set((prev) => {
+        const newState = { ...prev.state, ...updates };
+        syncState(newState, prev.activeSessionId);
+        return { state: newState };
+      });
+    },
+    projectScripture: (reference, translation, text) => {
+      const cleanedText = cleanScriptureText(text);
+      set((prev) => {
+        const newState = {
+          ...prev.state,
+          type: 'scripture' as PresentationStateType,
+          scripture: { reference, translation, text: cleanedText },
+        };
+        syncState(newState, prev.activeSessionId);
+        return { state: newState };
+      });
+    },
+    blackScreen: () => {
+      set((prev) => {
+        const newState = { ...prev.state, type: 'black' as PresentationStateType };
+        syncState(newState, prev.activeSessionId);
+        return { state: newState };
+      });
+    },
+    clearScreen: () => {
+      set((prev) => {
+        // Toggle behavior: if it's already clear and we have previous scripture data, restore it
+        const isCurrentlyClear = prev.state.type === 'clear';
+        const newType = (isCurrentlyClear && prev.state.scripture) ? 'scripture' : 'clear';
+        
+        const newState = { ...prev.state, type: newType as PresentationStateType };
+        syncState(newState, prev.activeSessionId);
+        return { state: newState };
+      });
+    },
+    setBackground: (type, url) => {
+      set((prev) => {
+        const newState = {
+          ...prev.state,
+          background: { type, url },
+        };
+        syncState(newState, prev.activeSessionId);
+        return { state: newState };
+      });
+    },
+    sendVideoCommand: (command, value) => {
+      if (broadcastChannel) {
+        broadcastChannel.postMessage({ type: 'VIDEO_CONTROL', command, value });
+      }
+    },
+  };
+});
