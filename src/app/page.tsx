@@ -343,7 +343,9 @@ export default function Dashboard() {
         url.searchParams.append('chapter', chapter.toString());
         if (verseStart) url.searchParams.append('verseStart', verseStart.toString());
         if (verseEnd) url.searchParams.append('verseEnd', verseEnd.toString());
-        if (activeTranslationId) url.searchParams.append('translationId', activeTranslationId);
+        
+        const currentTransId = usePresentationStore.getState().activeTranslationId;
+        if (currentTransId) url.searchParams.append('translationId', currentTransId);
 
         try {
           const res = await fetch(url.toString());
@@ -374,7 +376,7 @@ export default function Dashboard() {
             const res = await fetch('/api/ai/scripture-search', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ query: quote, translationId: activeTranslationId })
+              body: JSON.stringify({ query: quote, translationId: usePresentationStore.getState().activeTranslationId })
             });
             const data = await res.json();
             if (data.results && data.results.length > 0) {
@@ -420,20 +422,34 @@ export default function Dashboard() {
           lastDetectedRef.current = refKey;
           setTimeout(() => { if (lastDetectedRef.current === refKey) lastDetectedRef.current = ""; }, 3000); // Debounce cooldown
           
-          // Re-fetch the final full text for all confirmed candidates since the validator only checked existence
+          // Re-fetch the final full text for all confirmed candidates.
+          // IMPORTANT: For verse ranges (e.g. Genesis 20:1-9) we only PROJECT the
+          // first verse so the screen isn't overloaded with text. The full range is
+          // stored as `verseRangeEnd` on the result so ScriptureContext can still
+          // highlight all the verses in the list.
           const fullResults = await Promise.all(parsedResults.map(async (parsed) => {
             const url = new URL('/api/bible/search', window.location.origin);
             url.searchParams.append('book', parsed.book);
             url.searchParams.append('chapter', parsed.chapter.toString());
             if (parsed.verseStart) url.searchParams.append('verseStart', parsed.verseStart.toString());
-            if (parsed.verseEnd) url.searchParams.append('verseEnd', parsed.verseEnd.toString());
-            if (activeTranslationId) url.searchParams.append('translationId', activeTranslationId);
+            // Do NOT send verseEnd here — we project only the first verse of the range.
+            // verseEnd is preserved separately so the UI can highlight the full range.
+            const currentTransId = usePresentationStore.getState().activeTranslationId;
+            if (currentTransId) url.searchParams.append('translationId', currentTransId);
 
             try {
               const res = await fetch(url.toString());
               const data = await res.json();
               if (data.results && data.results.length > 0) {
-                return { ...data.results[0], confidence: parsed.confidence, originalText: parsed.originalBookText, source: 'parser', isDefaultedVerse: parsed.isDefaultedVerse };
+                return {
+                  ...data.results[0],
+                  confidence: parsed.confidence,
+                  originalText: parsed.originalBookText,
+                  source: 'parser',
+                  isDefaultedVerse: parsed.isDefaultedVerse,
+                  // Preserve the range end so ScriptureContext can highlight all verses
+                  verseRangeEnd: parsed.verseEnd ?? null,
+                };
               }
             } catch (err) {
               console.error(err);
@@ -671,6 +687,31 @@ export default function Dashboard() {
     }
   };
 
+  // Resets the manual entry fields back to whatever is currently projected.
+  // Parses references like "Psalms 91:1", "John 3:16", "1 Kings 22:1-3".
+  const handleCancelManual = () => {
+    setEditingField(null);
+    const ref = state.scripture?.reference;
+    if (!ref) {
+      setManualBook("Genesis");
+      setManualChapter("1");
+      setManualVerse("1");
+      setBookInput("");
+      return;
+    }
+    // Reference format: "<Book Name> <chapter>:<verseStart>" or "<Book> <chapter>:<vs>-<ve>"
+    // The chapter:verse block is always the last whitespace-delimited token.
+    const parts = ref.trim().split(/\s+/);
+    const cvPart = parts[parts.length - 1]; // e.g. "91:1" or "3:16"
+    const bookPart = parts.slice(0, -1).join(' '); // e.g. "Psalms" or "1 Kings"
+    const [chapterStr, verseStr] = cvPart.split(':');
+    const verseOnly = (verseStr || '1').split('-')[0]; // take only start verse of a range
+    setManualBook(bookPart || "Genesis");
+    setManualChapter(chapterStr || "1");
+    setManualVerse(verseOnly || "1");
+    setBookInput("");
+  };
+
   const handleManualKeyDown = (e: React.KeyboardEvent, field: 'book' | 'chapter' | 'verse') => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -692,7 +733,20 @@ export default function Dashboard() {
       handleManualProject(finalBook, finalChapter, finalVerse);
     } else if (e.key === 'Escape') {
       setEditingField(null);
-    } else if (e.key === 'Tab') {
+    } else if (e.key === 'Tab' || e.key === ' ') {
+      // Space and Tab both advance through Book → Chapter → Verse.
+      // Edge-case: In the book field, Space is used inside numbered book names
+      // (e.g. "1 Kings"). We only intercept Space here when the current typed
+      // value already resolves to a known book — otherwise let it type normally
+      // so the operator can finish typing "1 Kings", "2 Chronicles" etc.
+      if (e.key === ' ' && field === 'book') {
+        const resolvedBook = predictedBook ||
+          (BIBLE_BOOKS.find(b => b.toLowerCase() === bookInput.trim().toLowerCase()) ?? null);
+        if (!resolvedBook) {
+          // Not yet a complete book name — let the space character through
+          return;
+        }
+      }
       e.preventDefault();
       if (field === 'book') {
         if (predictedBook) setManualBook(predictedBook);
@@ -703,6 +757,7 @@ export default function Dashboard() {
         setEditingField('verse');
         setManualVerse("");
       }
+      // In the verse field, Space does nothing (Enter projects)
     }
   };
 
@@ -1061,7 +1116,7 @@ export default function Dashboard() {
                       </button>
                       <button 
                         onClick={() => {
-                          projectScripture(scripture.reference, scripture.translation || "WEB", scripture.text);
+                          projectScripture(scripture.reference, scripture.translation || activeTranslationId || "WEB", scripture.text, scripture.verseRangeEnd ?? undefined);
                           setTimeout(() => { if (activeSessionId) loadHistory(activeSessionId) }, 500);
                           setDetectedVoiceScriptures(prev => prev.filter((_, idx) => idx !== i));
                           if (detectedVoiceScriptures.length <= 1) setVoiceTranscript("");
@@ -1194,11 +1249,18 @@ export default function Dashboard() {
                             className="bg-transparent border-b-2 border-blue-500 outline-none w-48 xl:w-64 text-white relative z-10 p-0 m-0"
                             value={bookInput}
                             onChange={(e) => {
-                               const val = e.target.value
+                               const raw = e.target.value;
+                               const val = raw
                                  .split(' ')
                                  .map(w => w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : '')
                                  .join(' ');
-                               setBookInput(val);
+                               // Auto-append a space after a leading digit (1/2/3) so that
+                               // numbered books like "1 Kings" or "2 Chronicles" get their
+                               // space inserted automatically. This keeps the Space key free
+                               // to advance from Book → Chapter without ambiguity.
+                               const autoSpaced =
+                                 bookInput === '' && /^[123]$/.test(val) ? val + ' ' : val;
+                               setBookInput(autoSpaced);
                             }}
                             onKeyDown={(e) => handleManualKeyDown(e, 'book')}
                             autoFocus
@@ -1239,15 +1301,23 @@ export default function Dashboard() {
                       )}
                    </div>
                    
-                   <p className="text-white/30 text-xs mt-6 mb-8 uppercase tracking-widest text-center font-semibold">Click any field to edit. Press Tab to move. Press Enter to confirm.</p>
+                   <p className="text-white/30 text-xs mt-6 mb-8 uppercase tracking-widest text-center font-semibold">Click any field to edit. Tab or Space to move. Enter to project.</p>
                    
-                   <button 
-                     onClick={() => handleManualProject()}
-                     className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-16 rounded-2xl shadow-[0_0_30px_rgba(37,99,235,0.4)] transition-all text-xl tracking-wide flex items-center gap-3 group"
-                   >
-                     Project
-                     <MonitorPlay className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                   </button>
+                   <div className="flex flex-col items-center gap-3">
+                     <button 
+                       onClick={() => handleManualProject()}
+                       className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-16 rounded-2xl shadow-[0_0_30px_rgba(37,99,235,0.4)] transition-all text-xl tracking-wide flex items-center gap-3 group"
+                     >
+                       Project
+                       <MonitorPlay className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                     </button>
+                     <button
+                       onClick={handleCancelManual}
+                       className="text-white/40 hover:text-white/80 text-xs font-semibold uppercase tracking-widest transition-colors px-6 py-2 rounded-xl hover:bg-white/5"
+                     >
+                       Cancel
+                     </button>
+                   </div>
                 </div>
               )}
             </div>

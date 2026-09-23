@@ -25,13 +25,22 @@ export async function GET(req: Request) {
 
   // If explicit parameters are provided (e.g. from the voice parser)
   if (exactBook && exactChapter) {
-    const bookWhere: any = { name: { equals: exactBook, mode: 'insensitive' } };
-    if (translationId) bookWhere.translationId = translationId;
+    // Some translations store variant book names (e.g. "Psalm" instead of "Psalms").
+    // We try the canonical name first, then any known aliases, so we always find the book.
+    const BOOK_NAME_ALIASES: Record<string, string[]> = {
+      "Psalms":          ["Psalm"],
+      "Song of Solomon": ["Song Of Solomon", "Song of Songs", "Song Of Songs"],
+    };
 
-    const book = await prisma.bibleBook.findFirst({
-      where: bookWhere,
-      include: { translation: true },
-    });
+    const namesToTry: string[] = [exactBook, ...(BOOK_NAME_ALIASES[exactBook] ?? [])];
+
+    let book: (Awaited<ReturnType<typeof prisma.bibleBook.findFirst>> & { translation: any }) | null = null;
+    for (const nameVariant of namesToTry) {
+      const bookWhere: any = { name: { equals: nameVariant, mode: 'insensitive' } };
+      if (translationId) bookWhere.translationId = translationId;
+      book = await prisma.bibleBook.findFirst({ where: bookWhere, include: { translation: true } });
+      if (book) break;
+    }
 
     if (!book) {
       return NextResponse.json({ error: `Book '${exactBook}' not found in the selected translation.` });

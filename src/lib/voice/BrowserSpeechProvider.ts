@@ -69,12 +69,46 @@ export class BrowserSpeechProvider implements SpeechRecognitionProvider {
 
       this.connection.on("error", (err: any) => {
         if (this.onErrorCallback) {
-          this.onErrorCallback(new Error(err.message || "Deepgram Error"));
+          // The Deepgram SDK passes a raw browser Event (not an Error instance) on
+          // network-level failures, so err.message is often undefined or "[object Event]".
+          // We inspect the event to give a useful message instead.
+          let message = "Voice service error. Please try again.";
+
+          if (err instanceof Error) {
+            message = err.message;
+          } else if (err && typeof err === "object") {
+            // WebSocket CloseEvent carries a code + reason
+            if ("code" in err) {
+              const code: number = err.code;
+              if (code === 1006 || code === 1001) {
+                message = "Lost connection to voice service — check your internet connection.";
+              } else if (code === 1008 || code === 4000) {
+                message = "Voice service rejected the connection (invalid API key).";
+              } else if (code === 1011) {
+                message = "Voice service encountered an internal error. Please try again.";
+              } else {
+                message = `Voice connection closed (code ${code})${err.reason ? ": " + err.reason : ""}.`;
+              }
+            } else if ("type" in err && err.type === "error") {
+              // Generic ErrorEvent with no code — almost always a network drop
+              message = "Lost connection to voice service — check your internet connection.";
+            }
+          }
+
+          this.onErrorCallback(new Error(message));
         }
         this.stop();
       });
 
-      this.connection.on("close", () => {
+      this.connection.on("close", (event: any) => {
+        // Only surface a user-visible error for abnormal closures (code 1006 = no close frame,
+        // meaning the network dropped). Normal stops (code 1000/1001 from this.stop()) are silent.
+        if (this.isListening && this.onErrorCallback) {
+          const code = event?.code;
+          if (code && code !== 1000 && code !== 1001) {
+            this.onErrorCallback(new Error("Lost connection to voice service — check your internet connection."));
+          }
+        }
         this.stop();
       });
 
@@ -84,7 +118,19 @@ export class BrowserSpeechProvider implements SpeechRecognitionProvider {
     } catch (err) {
       this.isListening = false;
       if (this.onErrorCallback) {
-        this.onErrorCallback(err instanceof Error ? err : new Error(String(err)));
+        let message = "Failed to start voice recognition.";
+        if (err instanceof Error) {
+          if (err.name === "NotAllowedError" || err.message.includes("Permission")) {
+            message = "Microphone access denied. Please allow microphone access and try again.";
+          } else if (err.message.includes("fetch") || err.message.includes("network") || err.message.includes("Failed to fetch")) {
+            message = "Could not reach voice service — check your internet connection.";
+          } else if (err.message.includes("DEEPGRAM_API_KEY") || err.message.includes("Missing")) {
+            message = "Voice service is not configured (missing API key).";
+          } else {
+            message = err.message;
+          }
+        }
+        this.onErrorCallback(new Error(message));
       }
     }
   }

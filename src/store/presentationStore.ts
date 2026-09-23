@@ -26,6 +26,10 @@ export interface PresentationStateData {
     reference: string;
     translation: string;
     text: string;
+    // When a verse range is detected (e.g. "Genesis 20:1-9"), only the first verse
+    // is projected on screen. verseRangeEnd stores the last verse of the range so
+    // ScriptureContext can still highlight all verses in the list.
+    verseRangeEnd?: number;
   };
   background?: {
     type: BackgroundType;
@@ -41,7 +45,7 @@ interface PresentationStore {
   setActiveTranslationId: (id: string | null) => void;
   state: PresentationStateData;
   setState: (newState: Partial<PresentationStateData>) => void;
-  projectScripture: (reference: string, translation: string, text: string) => void;
+  projectScripture: (reference: string, translation: string, text: string, verseRangeEnd?: number) => void;
   blackScreen: () => void;
   clearScreen: () => void;
   setBackground: (type: BackgroundType, url?: string) => void;
@@ -108,13 +112,13 @@ export const usePresentationStore = create<PresentationStore>((set, get) => {
         return { state: newState };
       });
     },
-    projectScripture: (reference, translation, text) => {
+    projectScripture: (reference, translation, text, verseRangeEnd) => {
       const cleanedText = cleanScriptureText(text);
       set((prev) => {
         const newState = {
           ...prev.state,
           type: 'scripture' as PresentationStateType,
-          scripture: { reference, translation, text: cleanedText },
+          scripture: { reference, translation, text: cleanedText, verseRangeEnd },
         };
         syncState(newState, prev.activeSessionId);
         return { state: newState };

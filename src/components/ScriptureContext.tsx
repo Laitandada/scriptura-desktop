@@ -38,7 +38,10 @@ export function ScriptureContext() {
     const book = match[1];
     const chapter = parseInt(match[2], 10);
     const verseStart = parseInt(match[3], 10);
-    const verseEnd = match[4] ? parseInt(match[4], 10) : verseStart;
+    // Use verseRangeEnd from the store if present (voice-detected range like 1-9),
+    // otherwise fall back to the range encoded in the reference string itself.
+    const verseEnd = state.scripture.verseRangeEnd
+      ?? (match[4] ? parseInt(match[4], 10) : verseStart);
     
     // Generate array of active verses
     const verses = [];

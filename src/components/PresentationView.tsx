@@ -89,6 +89,11 @@ export function PresentationView({
     fontSizeSetting,
     alignment,
     String(settings.showReference),
+    fontWeightSetting,
+    textShadowSetting,
+    textOutlineSetting,
+    outlineColorSetting,
+    textColorSetting,
   ].join('||');
 
   // ─── Single layout effect handles BOTH reset detection AND measurement ───────
