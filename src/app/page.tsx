@@ -98,6 +98,7 @@ export default function Dashboard() {
   const [mediaItems, setMediaItems] = useState<any[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const lastVoiceCommandTimeRef = useRef<number>(0);
 
   // Voice State
   const [isListening, setIsListening] = useState(false);
@@ -122,10 +123,13 @@ export default function Dashboard() {
   }, [voiceError]);
 
   const handleAdjacentScripture = async (direction: 'next' | 'prev') => {
-    if (!state.scripture?.reference) return;
+    const currentState = usePresentationStore.getState().state;
+    const currentTranslationId = usePresentationStore.getState().activeTranslationId;
+    
+    if (!currentState.scripture?.reference) return;
     
     // Parse current reference (e.g., "Romans 5:1" or "Romans 5:1-3")
-    const match = state.scripture.reference.match(/^(.+?)\s+(\d+):(\d+)(?:-(\d+))?$/);
+    const match = currentState.scripture.reference.match(/^(.+?)\s+(\d+):(\d+)(?:-(\d+))?$/);
     if (!match) return; 
 
     const book = match[1];
@@ -141,7 +145,7 @@ export default function Dashboard() {
       url.searchParams.append('chapter', chapter.toString());
       url.searchParams.append('verse', verse.toString());
       url.searchParams.append('direction', direction);
-      if (activeTranslationId) url.searchParams.append('translationId', activeTranslationId);
+      if (currentTranslationId) url.searchParams.append('translationId', currentTranslationId);
       const res = await fetch(url.toString());
       const data = await res.json();
       
@@ -367,6 +371,24 @@ export default function Dashboard() {
         if (usePresentationStore.getState().state.type === 'black') {}
         
         const lowerText = text.toLowerCase();
+        
+        // --- Voice Commands ---
+        const now = Date.now();
+        if (usePresentationStore.getState().state.type === 'scripture' && (now - lastVoiceCommandTimeRef.current > 3000)) {
+          if (/\b(?:next verse|go to the next verse|next one|read the next verse)\b/.test(lowerText)) {
+            lastVoiceCommandTimeRef.current = now;
+            handleAdjacentScripture('next');
+            toast.success("Voice command: Next Verse");
+            return;
+          }
+          if (/\b(?:previous verse|go back a verse|previous one|read the previous verse)\b/.test(lowerText)) {
+            lastVoiceCommandTimeRef.current = now;
+            handleAdjacentScripture('prev');
+            toast.success("Voice command: Previous Verse");
+            return;
+          }
+        }
+
         const wakeMatch = lowerText.match(/(?:the bible says|the scripture says|it is written)\s+(.+)/i);
         
         if (wakeMatch && isFinal && wakeMatch[1].trim().length > 10) {
