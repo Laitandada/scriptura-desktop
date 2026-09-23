@@ -73,13 +73,20 @@ Respond strictly with a JSON object in this format:
     const validatedResults = [];
 
     for (const res of parsed.results) {
-      const bookWhere: any = { name: { startsWith: res.book, mode: 'insensitive' } };
-      if (translationId) bookWhere.translationId = translationId;
+      const BOOK_NAME_ALIASES: Record<string, string[]> = {
+        "Psalms":          ["Psalm"],
+        "Song of Solomon": ["Song Of Solomon", "Song of Songs", "Song Of Songs"],
+      };
 
-      const book = await prisma.bibleBook.findFirst({
-        where: bookWhere,
-        include: { translation: true },
-      });
+      const namesToTry: string[] = [res.book, ...(BOOK_NAME_ALIASES[res.book] ?? [])];
+
+      let book: (Awaited<ReturnType<typeof prisma.bibleBook.findFirst>> & { translation: any }) | null = null;
+      for (const nameVariant of namesToTry) {
+        const bookWhere: any = { name: { equals: nameVariant, mode: 'insensitive' } };
+        if (translationId) bookWhere.translationId = translationId;
+        book = await prisma.bibleBook.findFirst({ where: bookWhere, include: { translation: true } });
+        if (book) break;
+      }
 
       if (book) {
         const verse = await prisma.bibleVerse.findFirst({

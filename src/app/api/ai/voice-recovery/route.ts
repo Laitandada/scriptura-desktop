@@ -110,13 +110,20 @@ export async function POST(req: Request) {
     const validatedResults = [];
 
     for (const cand of parsed.candidates) {
-      const bookWhere: any = { name: { startsWith: cand.book, mode: 'insensitive' } };
-      if (translationId) bookWhere.translationId = translationId;
+      const BOOK_NAME_ALIASES: Record<string, string[]> = {
+        "Psalms":          ["Psalm"],
+        "Song of Solomon": ["Song Of Solomon", "Song of Songs", "Song Of Songs"],
+      };
 
-      const book = await prisma.bibleBook.findFirst({
-        where: bookWhere,
-        include: { translation: true },
-      });
+      const namesToTry: string[] = [cand.book, ...(BOOK_NAME_ALIASES[cand.book] ?? [])];
+
+      let book: (Awaited<ReturnType<typeof prisma.bibleBook.findFirst>> & { translation: any }) | null = null;
+      for (const nameVariant of namesToTry) {
+        const bookWhere: any = { name: { equals: nameVariant, mode: 'insensitive' } };
+        if (translationId) bookWhere.translationId = translationId;
+        book = await prisma.bibleBook.findFirst({ where: bookWhere, include: { translation: true } });
+        if (book) break;
+      }
 
       if (book) {
         // Build query based on whether there's a verseStart

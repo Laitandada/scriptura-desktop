@@ -190,7 +190,7 @@ function generateCandidates(numberBlock: string): { chapter: number, verseStart?
   const candidates: { chapter: number, verseStart?: number, verseEnd?: number, isDefaultedVerse?: boolean }[] = [];
 
   // Priority 1: Explicit notation "15:3" or "15:3-5"
-  const p1 = clean.match(/^(\d+):(\d+)(?:\s*(?:-|to|through|and|,)\s*(\d+))?$/i);
+  const p1 = clean.match(/^(\d+):(\d+)(?:\s*(?:-|to|through|and|or|,)\s*(\d+))?$/i);
   if (p1) {
     candidates.push({
       chapter: parseInt(p1[1]),
@@ -201,7 +201,7 @@ function generateCandidates(numberBlock: string): { chapter: number, verseStart?
   }
 
   // Priority 1: Explicit spoken format "chapter 15 verse 3 to 5"
-  const p2 = clean.match(/^(?:chapter\s+)?(\d+)\s+(?:verses?\s+)(\d+)(?:\s+(?:to|through|-|and|,)\s+(?:verse\s+)?(\d+))?$/i);
+  const p2 = clean.match(/^(?:chapter\s+)?(\d+)\s+(?:verses?\s+)(\d+)(?:\s+(?:to|through|-|and|or|,)\s+(?:verse\s+)?(\d+))?$/i);
   if (p2) {
     candidates.push({
       chapter: parseInt(p2[1]),
@@ -212,7 +212,7 @@ function generateCandidates(numberBlock: string): { chapter: number, verseStart?
   }
 
   // Priority 2: Separate numeric tokens e.g. "8 28" or "8 28 30"
-  const separateTokens = clean.match(/^(\d+)\s+(\d+)(?:\s+(?:to|through|-|and|,)\s+(\d+)|\s+(\d+))?$/i);
+  const separateTokens = clean.match(/^(\d+)\s+(\d+)(?:\s+(?:to|through|-|and|or|,)\s+(\d+)|\s+(\d+))?$/i);
   if (separateTokens) {
     // "8 28"
     if (!separateTokens[3] && !separateTokens[4]) {
@@ -254,7 +254,7 @@ export async function parseReferences(
   const normalized = convertWordsToNumbers(text);
   const results: ParsedReference[] = [];
   
-  const numberBlockRegex = /\b(?:chapter\s+)?(\d+(?:\s*(?:verses?|to|through|and|-|:|,)\s*\d+|\s+\d+)*)\b/gi;
+  const numberBlockRegex = /\b(?:chapter\s+)?(\d+(?:\s*(?:verses?|to|through|and|or|-|:|,)\s*\d+|\s+\d+)*)\b/gi;
   let match;
   
   while ((match = numberBlockRegex.exec(normalized)) !== null) {
@@ -322,7 +322,11 @@ export async function parseReferences(
         }
       }
 
-      const threshold = candidateText.length > 10 ? 3 : 2;
+      let threshold = 0;
+      if (candidateText.length <= 3) threshold = 0;
+      else if (candidateText.length <= 6) threshold = 1;
+      else if (candidateText.length <= 10) threshold = 2;
+      else threshold = 3;
 
       if (minDistance <= threshold && bestMatch) {
         for (const cand of candidates) {
@@ -367,7 +371,7 @@ export async function parseReferences(
         const cleanNb = numberBlockText.replace(/verses?/gi, '').trim();
         let cVerseStart: number | undefined;
         let cVerseEnd: number | undefined;
-        const justVerse = cleanNb.match(/^(\d+)(?:\s+(?:to|through|-|and|,)\s+(?:verse\s+)?(\d+))?$/i);
+        const justVerse = cleanNb.match(/^(\d+)(?:\s+(?:to|through|-|and|or|,)\s+(?:verse\s+)?(\d+))?$/i);
         if (justVerse) {
           cVerseStart = parseInt(justVerse[1]);
           if (justVerse[2]) cVerseEnd = parseInt(justVerse[2]);
