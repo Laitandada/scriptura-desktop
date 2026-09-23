@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { cleanScriptureText } from '@/lib/bible/cleaner';
 
-export type PresentationStateType = 'scripture' | 'black' | 'clear';
+export type PresentationStateType = 'scripture' | 'black' | 'clear' | 'presentation';
 export type BackgroundType = 'image' | 'video' | 'none';
 export type TextAlignment = 'top' | 'center' | 'bottom';
 export type FontWeight = 'normal' | 'medium' | 'semibold' | 'bold' | 'black';
@@ -35,6 +35,13 @@ export interface PresentationStateData {
     type: BackgroundType;
     url?: string;
   };
+  presentation?: {
+    folderId: string;
+    folderName: string;
+    mediaId: string;
+    type: 'image' | 'video';
+    url: string;
+  };
   settings: PresentationSettings;
 }
 
@@ -46,6 +53,7 @@ interface PresentationStore {
   state: PresentationStateData;
   setState: (newState: Partial<PresentationStateData>) => void;
   projectScripture: (reference: string, translation: string, text: string, verseRangeEnd?: number) => void;
+  projectPresentationSlide: (folderId: string, folderName: string, mediaId: string, type: 'image' | 'video', url: string) => void;
   blackScreen: () => void;
   clearScreen: () => void;
   setBackground: (type: BackgroundType, url?: string) => void;
@@ -119,6 +127,17 @@ export const usePresentationStore = create<PresentationStore>((set, get) => {
           ...prev.state,
           type: 'scripture' as PresentationStateType,
           scripture: { reference, translation, text: cleanedText, verseRangeEnd },
+        };
+        syncState(newState, prev.activeSessionId);
+        return { state: newState };
+      });
+    },
+    projectPresentationSlide: (folderId, folderName, mediaId, type, url) => {
+      set((prev) => {
+        const newState = {
+          ...prev.state,
+          type: 'presentation' as PresentationStateType,
+          presentation: { folderId, folderName, mediaId, type, url },
         };
         syncState(newState, prev.activeSessionId);
         return { state: newState };

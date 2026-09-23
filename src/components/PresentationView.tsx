@@ -245,7 +245,7 @@ export function PresentationView({
       onDoubleClick={onDoubleClick}
     >
       {/* Background Layer */}
-      {state.background?.url && (
+      {state.background?.url && state.type !== 'presentation' && (
         <div className="absolute inset-0 z-0">
           {state.background.type === "image" && (
             <img
@@ -262,6 +262,33 @@ export function PresentationView({
               loop={videoLoop ?? true}
               muted
               className="w-full h-full object-cover"
+              onTimeUpdate={onVideoTimeUpdate}
+              onLoadedMetadata={onVideoLoadedMetadata}
+              onPlay={onVideoPlay}
+              onPause={onVideoPause}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Presentation Layer */}
+      {state.type === 'presentation' && state.presentation && (
+        <div className="absolute inset-0 z-0 flex items-center justify-center bg-black">
+          {state.presentation.type === "image" && (
+            <img
+              src={state.presentation.url}
+              alt="presentation slide"
+              className="w-full h-full object-contain"
+            />
+          )}
+          {state.presentation.type === "video" && (
+            <video
+              ref={videoRef}
+              src={state.presentation.url}
+              autoPlay={videoPlaying ?? true}
+              loop={videoLoop ?? true}
+              muted
+              className="w-full h-full object-contain"
               onTimeUpdate={onVideoTimeUpdate}
               onLoadedMetadata={onVideoLoadedMetadata}
               onPlay={onVideoPlay}

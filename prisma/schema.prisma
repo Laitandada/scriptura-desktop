@@ -41,12 +41,24 @@ model BibleVerse {
   @@index([translationId, bookId, chapter])
 }
 
+model PresentationFolder {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  media     Media[]
+}
+
 model Media {
-  id        String            @id @default(uuid())
+  id        String              @id @default(uuid())
   filename  String
-  type      String            // "IMAGE" or "VIDEO"
-  path      String            // Path in public/media
-  createdAt DateTime          @default(now())
+  type      String              // "IMAGE" or "VIDEO"
+  path      String              // Path in public/media
+  createdAt DateTime            @default(now())
+  
+  folderId  String?
+  folder    PresentationFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  order     Int                 @default(0)
+  
   events    ProjectionEvent[]
 }
 
