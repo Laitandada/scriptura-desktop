@@ -39,6 +39,14 @@ export function PresentationView({
   const contentRef = useRef<HTMLDivElement>(null);
   const [scaleFactor, setScaleFactor] = useState(1);
   const [autoScaleRatio, setAutoScaleRatio] = useState(1);
+  // isVisible controls opacity: content stays hidden until the layout effect
+  // has settled on the correct ratio, preventing the "shoots off screen" flash.
+  const [isVisible, setIsVisible] = useState(false);
+
+  // Ref that tracks the measure-key from the PREVIOUS layout-effect run.
+  // Using a ref (not state) lets the layout effect detect changes synchronously
+  // without any race against useEffect.
+  const prevMeasureKeyRef = useRef('');
 
   // Measure container dimensions for relative canvas scaling
   useEffect(() => {
@@ -73,51 +81,81 @@ export function PresentationView({
   const relativeRefFontSize = Math.max(12, Math.round(36 * scaleFactor));
   const relativePadding = Math.max(8, Math.round(48 * scaleFactor));
 
-  // Dynamic Auto-Fit measurement to downscale long scriptures so text and reference NEVER crop off-screen
+  // Key that uniquely identifies the current verse + all settings that affect text size.
+  // When this changes we restart the measurement cycle from ratio=1.0.
+  const measureKey = [
+    state.scripture?.reference,
+    state.scripture?.text,
+    fontSizeSetting,
+    alignment,
+    String(settings.showReference),
+  ].join('||');
+
+  // ─── Single layout effect handles BOTH reset detection AND measurement ───────
+  //
+  // WHY one effect?
+  // React's commit phase runs useLayoutEffect BEFORE useEffect.
+  // The previous approach used a useEffect to reset autoScaleRatio → 1.0, but the
+  // layout effect had already fired its measurement with the OLD stale ratio first,
+  // so every verse change required an extra refresh cycle to converge.
+  //
+  // FIX: detect verse/settings changes via prevMeasureKeyRef (synchronous, no race).
+  // On change  → hide content, reset ratio to 1.0, bail out early.
+  //              The re-render from setAutoScaleRatio(1.0) brings the DOM to ratio=1.0,
+  //              then this effect runs again and measures correctly in one pass.
+  // No change  → measure the DOM (which is at current autoScaleRatio), compute the
+  //              ideal ratio, apply it. When the ratio stabilises, reveal the content.
+  // ─────────────────────────────────────────────────────────────────────────────
   useIsomorphicLayoutEffect(() => {
     const container = containerRef.current;
     const content = contentRef.current;
     if (!container || !content) return;
 
-    const containerHeight = container.clientHeight;
-    const containerWidth = container.clientWidth;
-    if (containerHeight <= 0 || containerWidth <= 0) return;
+    const containerH = container.clientHeight;
+    const containerW = container.clientWidth;
+    if (containerH <= 0 || containerW <= 0) return;
 
-    // Available bounds inside presentation screen
-    const paddingY = alignment === 'center' ? 32 : relativePadding + 16;
-    const availableHeight = Math.max(80, containerHeight - paddingY * 2);
-    const availableWidth = Math.max(80, containerWidth * 0.92);
+    // ── Detect verse / settings change ──────────────────────────────────────
+    if (measureKey !== prevMeasureKeyRef.current) {
+      prevMeasureKeyRef.current = measureKey;
+      setIsVisible(false);
 
-    const currentRatio = autoScaleRatio > 0 ? autoScaleRatio : 1;
-    const scrollHeight = content.scrollHeight;
-    const scrollWidth = content.scrollWidth;
-
-    if (scrollHeight <= 0) return;
-
-    // Calculate unscaled dimensions (dimensions if autoScaleRatio were 1.0)
-    const unscaledHeight = scrollHeight / currentRatio;
-    const unscaledWidth = scrollWidth / currentRatio;
-
-    const heightRatio = availableHeight / unscaledHeight;
-    const widthRatio = availableWidth / unscaledWidth;
-
-    // Scale down proportionally so both height and width fit inside available bounds
-    let idealRatio = Math.min(heightRatio, widthRatio);
-    idealRatio = Math.min(1.0, Math.max(0.20, idealRatio));
-
-    if (Math.abs(idealRatio - autoScaleRatio) > 0.01) {
-      setAutoScaleRatio(idealRatio);
+      if (autoScaleRatio !== 1.0) {
+        // Reset ratio → triggers re-render → this effect fires again with DOM at 1.0
+        setAutoScaleRatio(1.0);
+        return; // Don't measure yet; wait for the clean re-render
+      }
+      // Already at 1.0 → fall through and measure directly
     }
-  }, [
-    state.scripture?.text, 
-    state.scripture?.reference, 
-    fontSizeSetting, 
-    scaleFactor, 
-    alignment, 
-    settings.showReference,
-    autoScaleRatio,
-    relativePadding
-  ]);
+
+    // ── Measurement pass ─────────────────────────────────────────────────────
+    const paddingY = alignment === 'center' ? 32 : relativePadding + 16;
+    const availableH = Math.max(80, containerH - paddingY * 2);
+    const availableW = Math.max(80, containerW * 0.92);
+
+    const scrollH = content.scrollHeight;
+    const scrollW = content.scrollWidth;
+    if (scrollH <= 0) return;
+
+    // Project what the dimensions would be at ratio=1.0
+    const unscaledH = scrollH / autoScaleRatio;
+    const unscaledW = scrollW / autoScaleRatio;
+
+    const hRatio = availableH / unscaledH;
+    const wRatio = availableW / unscaledW;
+
+    // Never scale UP beyond the user's configured size
+    let idealRatio = Math.min(1.0, hRatio, wRatio);
+    idealRatio = Math.max(0.15, idealRatio);
+
+    if (Math.abs(idealRatio - autoScaleRatio) > 0.005) {
+      // Not yet stable — apply new ratio; next pass will confirm
+      setAutoScaleRatio(idealRatio);
+    } else {
+      // Stable — reveal at correct size
+      setIsVisible(true);
+    }
+  }, [measureKey, scaleFactor, autoScaleRatio, relativePadding, alignment]);
 
   const effectiveFontSize = Math.max(9, Math.round(relativeFontSize * autoScaleRatio));
   const effectiveRefFontSize = Math.max(11, Math.round(relativeRefFontSize * autoScaleRatio));
@@ -153,7 +191,7 @@ export function PresentationView({
     glow: `0 0 20px ${textColorSetting}, 0 0 10px ${textColorSetting}`,
   };
 
-  // Text Outline stroke mapping using dynamic outlineColorSetting
+  // Text Outline stroke mapping
   const outlineMap: Record<string, string> = {
     none: "",
     "thin-dark": `-1px -1px 0 ${outlineColorSetting}, 1px -1px 0 ${outlineColorSetting}, -1px 1px 0 ${outlineColorSetting}, 1px 1px 0 ${outlineColorSetting}`,
@@ -163,7 +201,7 @@ export function PresentationView({
 
   const shadowVal = shadowMap[textShadowSetting] || shadowMap.medium;
   const outlineVal = outlineMap[textOutlineSetting] || "";
-  
+
   const combinedTextShadow = [outlineVal, shadowVal !== "none" ? shadowVal : ""]
     .filter(Boolean)
     .join(", ");
@@ -173,7 +211,6 @@ export function PresentationView({
     const ref = state.scripture.reference || "";
     const trans = state.scripture.translation;
     if (!trans) return ref;
-    
     if (ref.toUpperCase().includes(`(${trans.toUpperCase()})`)) {
       return ref;
     }
@@ -185,7 +222,7 @@ export function PresentationView({
 
   if (state.type === "black") {
     return (
-      <div 
+      <div
         ref={containerRef}
         className={`bg-black w-full h-full overflow-hidden relative cursor-pointer ${className}`}
         onClick={onClick}
@@ -206,19 +243,19 @@ export function PresentationView({
       {state.background?.url && (
         <div className="absolute inset-0 z-0">
           {state.background.type === "image" && (
-            <img 
-              src={state.background.url} 
-              alt="background" 
+            <img
+              src={state.background.url}
+              alt="background"
               className="w-full h-full object-cover"
             />
           )}
           {state.background.type === "video" && (
-            <video 
+            <video
               ref={videoRef}
-              src={state.background.url} 
-              autoPlay={videoPlaying ?? true} 
-              loop={videoLoop ?? true} 
-              muted 
+              src={state.background.url}
+              autoPlay={videoPlaying ?? true}
+              loop={videoLoop ?? true}
+              muted
               className="w-full h-full object-cover"
               onTimeUpdate={onVideoTimeUpdate}
               onLoadedMetadata={onVideoLoadedMetadata}
@@ -229,50 +266,55 @@ export function PresentationView({
         </div>
       )}
 
-      {/* Dark Overlay for Readability - Fades to 0 opacity when text is cleared */}
-      <div 
+      {/* Dark Overlay - fades to 0 when text is cleared */}
+      <div
         className="absolute inset-0 z-10 bg-black pointer-events-none transition-opacity duration-500"
         style={{ opacity: effectiveOverlayOpacity }}
       />
 
-      {/* Screen Cleared Indicator for Preview */}
+      {/* Screen Cleared Indicator (preview only) */}
       {state.type === "clear" && isPreview && (
         <div className="text-white/30 uppercase tracking-widest text-xs font-semibold z-20 relative">
           Screen Cleared
         </div>
       )}
 
-      {/* Scripture Content */}
+      {/* Scripture Content
+          opacity stays 0 until the layout effect confirms the correct autoScaleRatio,
+          preventing long verses from shooting off-screen and short verses from
+          appearing at a wrong (shrunken) size. */}
       {state.type === "scripture" && state.scripture && (
-        <div 
-          ref={contentRef}
-          className="relative z-20 w-[92%] max-w-[95%] max-h-[92%] flex flex-col items-center justify-center text-center overflow-hidden"
+        <div
+          style={{ opacity: isVisible ? 1 : 0, transition: "opacity 0.15s ease-in" }}
+          className="relative z-20 w-[92%] max-w-[95%] flex flex-col items-center justify-center text-center"
         >
-          {settings.showReference && (
-            <h1 
-              className="tracking-widest uppercase mb-[0.5em] opacity-90 font-serif shrink-0"
+          <div ref={contentRef} className="flex flex-col items-center justify-center text-center">
+            {settings.showReference && (
+              <h1
+                className="tracking-widest uppercase mb-[0.5em] opacity-90 font-serif shrink-0"
+                style={{
+                  fontSize: `${effectiveRefFontSize}px`,
+                  fontWeight: computedFontWeight,
+                  color: textColorSetting,
+                  textShadow: combinedTextShadow,
+                }}
+              >
+                {displayReference}
+              </h1>
+            )}
+
+            <p
+              className="font-serif leading-relaxed text-balance"
               style={{
-                fontSize: `${effectiveRefFontSize}px`,
+                fontSize: `${effectiveFontSize}px`,
                 fontWeight: computedFontWeight,
                 color: textColorSetting,
                 textShadow: combinedTextShadow,
               }}
             >
-              {displayReference}
-            </h1>
-          )}
-          
-          <p 
-            className="font-serif leading-relaxed text-balance"
-            style={{ 
-              fontSize: `${effectiveFontSize}px`,
-              fontWeight: computedFontWeight,
-              color: textColorSetting,
-              textShadow: combinedTextShadow,
-            }}
-          >
-            {cleanScriptureText(state.scripture.text)}
-          </p>
+              {cleanScriptureText(state.scripture.text)}
+            </p>
+          </div>
         </div>
       )}
     </div>

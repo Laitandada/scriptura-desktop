@@ -81,17 +81,16 @@ export const usePresentationStore = create<PresentationStore>((set, get) => {
   }
 
   const syncState = (newState: PresentationStateData, sessionId: string | null) => {
-    // Send to database first for atomic update + history logging
     if (typeof window !== 'undefined') {
+      // Broadcast instantly for sub-millisecond tab sync
+      if (broadcastChannel) {
+        broadcastChannel.postMessage({ type: 'SYNC_STATE', state: newState });
+      }
+      // Persist state asynchronously in DB
       fetch('/api/presentation/project', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ state: newState, sessionId }),
-      }).then(() => {
-         // Broadcast instantly after DB accepts it (or optimistically)
-         if (broadcastChannel) {
-           broadcastChannel.postMessage({ type: 'SYNC_STATE', state: newState });
-         }
       }).catch(console.error);
     }
   };

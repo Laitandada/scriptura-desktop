@@ -77,17 +77,21 @@ export default function AlternateOutputPage() {
         }
       }
     };
+
+    // Immediately request current active state from Dashboard as soon as window loads
+    channel.postMessage({ type: 'REQUEST_STATE' });
+
     return () => channel.close();
   }, []);
 
-  // Initial load from the database as source of truth
+  // Initial load from the database as fallback
   useEffect(() => {
     async function loadInitialState() {
       try {
         const res = await fetch("/api/presentation/current");
         if (res.ok) {
           const data = await res.json();
-          setState(data);
+          usePresentationStore.setState({ state: data });
         }
       } catch (err) {
         console.error("Failed to load initial alternate output presentation state", err);
@@ -96,7 +100,7 @@ export default function AlternateOutputPage() {
       }
     }
     loadInitialState();
-  }, [setState]);
+  }, []);
 
   if (!isLoaded) return <div className="bg-black w-screen h-screen" />;
 

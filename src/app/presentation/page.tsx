@@ -60,6 +60,7 @@ export default function PresentationPage() {
   // Listen for video controls, heartbeat, and fullscreen requests from dashboard
   useEffect(() => {
     const channel = new BroadcastChannel('scriptura-presentation-sync');
+    
     channel.onmessage = (event) => {
       if (!event.data) return;
       if (event.data.type === 'PING') {
@@ -85,6 +86,10 @@ export default function PresentationPage() {
         }
       }
     };
+
+    // Immediately request current active state from Dashboard as soon as window loads
+    channel.postMessage({ type: 'REQUEST_STATE' });
+
     return () => channel.close();
   }, []);
 
@@ -111,14 +116,15 @@ export default function PresentationPage() {
     };
   }, [isFullscreen]);
 
-  // Initial load from the database as the source of truth
+  // Initial load from the database as fallback
   useEffect(() => {
     async function loadInitialState() {
       try {
         const res = await fetch("/api/presentation/current");
         if (res.ok) {
           const data = await res.json();
-          setState(data);
+          // Update store state locally without triggering re-broadcast loop
+          usePresentationStore.setState({ state: data });
         }
       } catch (err) {
         console.error("Failed to load initial presentation state", err);
@@ -127,7 +133,7 @@ export default function PresentationPage() {
       }
     }
     loadInitialState();
-  }, [setState]);
+  }, []);
 
   if (!isLoaded) return <div className="bg-black w-screen h-screen" />;
 

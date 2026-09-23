@@ -46,12 +46,13 @@ export async function POST(req: Request) {
         });
         return NextResponse.json({ session });
       }
-      return NextResponse.json({ error: 'No active session' }, { status: 400 });
+      return NextResponse.json({ error: 'No active session found. Please start a service or projection first.' }, { status: 400 });
     }
 
-    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid session action.' }, { status: 400 });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: 'Failed to manage session' }, { status: 500 });
+    return NextResponse.json({ error: 'Unable to manage session. Please start a projection or check database connection.' }, { status: 500 });
   }
 }
+

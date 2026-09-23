@@ -80,6 +80,7 @@ export default function Dashboard() {
   const [editingField, setEditingField] = useState<'book' | 'chapter' | 'verse' | null>(null);
   
   const [session, setSession] = useState<any>(null);
+  const [isSessionToggling, setIsSessionToggling] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [isFormatModalOpen, setIsFormatModalOpen] = useState(false);
@@ -216,20 +217,27 @@ export default function Dashboard() {
     updateLiveTranslation();
   }, [activeTranslationId, projectScripture]);
 
-  // Projector Heartbeat
+  // Projector Heartbeat & Live State Sync
   useEffect(() => {
     const channel = new BroadcastChannel('scriptura-presentation-sync');
     let lastPong = 0;
     
     channel.onmessage = (e) => {
       if (e.data?.type === 'PONG') {
+        const wasDisconnected = Date.now() - lastPong >= 2500;
         lastPong = Date.now();
+        // If projector just came online/reconnected, sync active state immediately
+        if (wasDisconnected) {
+          channel.postMessage({ type: 'SYNC_STATE', state: usePresentationStore.getState().state });
+        }
+      } else if (e.data?.type === 'REQUEST_STATE') {
+        // Projector explicitly requested current state upon opening
+        channel.postMessage({ type: 'SYNC_STATE', state: usePresentationStore.getState().state });
       }
     };
     
     const interval = setInterval(() => {
       channel.postMessage({ type: 'PING' });
-      // If we haven't received a pong in the last 2.5 seconds, it's disconnected
       setIsProjectorLive(Date.now() - lastPong < 2500);
     }, 1000);
     
@@ -569,6 +577,9 @@ export default function Dashboard() {
     }
 
     // --- Toggle ON: Open the projector ---
+    const currentState = usePresentationStore.getState().state;
+    const channel = new BroadcastChannel('scriptura-presentation-sync');
+    channel.postMessage({ type: 'SYNC_STATE', state: currentState });
 
     // Check if we're running inside the Electron wrapper
     if (typeof window !== 'undefined' && window.scriptura?.outputs) {
@@ -578,6 +589,10 @@ export default function Dashboard() {
           toast.error('Configured display unavailable. Opening settings...');
           setIsSettingsOpen(true);
         }
+        setTimeout(() => {
+          channel.postMessage({ type: 'SYNC_STATE', state: usePresentationStore.getState().state });
+          channel.close();
+        }, 600);
         return;
       } catch (err) {
         console.error("Failed to launch native projector:", err);
@@ -614,12 +629,12 @@ export default function Dashboard() {
     if (win) {
       presentationWindowRef.current = win;
       win.focus();
-      // Tell the presentation window to enter fullscreen once it's loaded
-      const channel = new BroadcastChannel('scriptura-presentation-sync');
+      // Tell the presentation window to enter fullscreen & sync state once loaded
       setTimeout(() => {
+        channel.postMessage({ type: 'SYNC_STATE', state: usePresentationStore.getState().state });
         channel.postMessage({ type: 'FULLSCREEN_REQUEST' });
         channel.close();
-      }, 1500);
+      }, 600);
     }
   };
 
@@ -735,16 +750,24 @@ export default function Dashboard() {
   };
 
   const handleSessionToggle = async () => {
+    if (isSessionToggling) return;
+    setIsSessionToggling(true);
     try {
       if (session) {
-        await fetch("/api/sessions", {
+        const res = await fetch("/api/sessions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "end" })
         });
+        const data = await res.json();
+        if (!res.ok || data.error) {
+          toast.error(data.error || "Failed to end service session");
+          return;
+        }
         setSession(null);
         setActiveSessionId(null);
         setHistory([]);
+        toast.success("Service session ended");
       } else {
         const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
         const res = await fetch("/api/sessions", {
@@ -753,11 +776,19 @@ export default function Dashboard() {
           body: JSON.stringify({ action: "start", name: `${today} Service` })
         });
         const data = await res.json();
+        if (!res.ok || !data?.session?.id) {
+          toast.error(data?.error || "Failed to start service session. Please verify database connection.");
+          return;
+        }
         setSession(data.session);
         setActiveSessionId(data.session.id);
+        toast.success(`Service session started: ${data.session.name}`);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Session toggle error:", err);
+      toast.error("Network error while updating service session");
+    } finally {
+      setIsSessionToggling(false);
     }
   };
 
@@ -903,10 +934,11 @@ export default function Dashboard() {
           <div className="flex items-center gap-3">
             <button
               onClick={handleSessionToggle}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold transition-all border ${session ? 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20' : 'bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20'}`}
+              disabled={isSessionToggling}
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-semibold transition-all border ${isSessionToggling ? 'opacity-50 cursor-not-allowed ' : ''}${session ? 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20' : 'bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20'}`}
             >
               {session ? <StopCircle className="w-4 h-4" /> : <PlayCircle className="w-4 h-4" />}
-              {session ? "END SERVICE" : "START SERVICE"}
+              {isSessionToggling ? (session ? "ENDING..." : "STARTING...") : (session ? "END SERVICE" : "START SERVICE")}
             </button>
             {session && <span className="text-sm text-white/50">{session.name}</span>}
           </div>
