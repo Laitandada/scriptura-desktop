@@ -1,14 +1,18 @@
 "use client";
 
 import React from "react";
-import { X, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, Type, Eye } from "lucide-react";
+import { X, AlignVerticalJustifyStart, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, Type, Eye, LayoutGrid, AlignLeft, AlignCenter, AlignRight, AlignJustify } from "lucide-react";
 import { 
   usePresentationStore, 
   PresentationStateData,
   TextAlignment, 
   FontWeight, 
   TextShadowStyle, 
-  TextOutlineStyle 
+  TextOutlineStyle,
+  ReferencePosition,
+  TextJustification,
+  VerseSettings,
+  ReferenceSettings
 } from "@/store/presentationStore";
 import { PresentationView } from "@/components/PresentationView";
 
@@ -22,23 +26,46 @@ export function FormatTextModal({ isOpen, onClose }: FormatTextModalProps) {
 
   if (!isOpen) return null;
 
-  const settings = state.settings || {
+  const settings = state.settings || {};
+  const verseSettings: VerseSettings = settings.verseSettings || {
     fontSize: 90,
-    overlayOpacity: 50,
-    showReference: true,
     alignment: 'center',
+    justification: 'justify',
     fontWeight: 'bold',
     textShadow: 'medium',
     textOutline: 'none',
+    outlineColor: '#000000',
+    textColor: '#ffffff',
+  };
+  const refSettings: ReferenceSettings = settings.referenceSettings || {
+    fontSize: 45,
+    position: 'bottom-right',
+    fontWeight: 'semibold',
+    textShadow: 'medium',
+    textOutline: 'none',
+    outlineColor: '#000000',
     textColor: '#ffffff',
   };
 
-  const updateSetting = <K extends keyof typeof settings>(key: K, value: typeof settings[K]) => {
+  const updateGlobalSetting = <K extends keyof typeof settings>(key: K, value: typeof settings[K]) => {
+    setState({ settings: { ...settings, [key]: value } });
+  };
+
+  const updateVerseSetting = <K extends keyof VerseSettings>(key: K, value: VerseSettings[K]) => {
     setState({
       settings: {
         ...settings,
-        [key]: value,
-      },
+        verseSettings: { ...verseSettings, [key]: value }
+      }
+    });
+  };
+
+  const updateRefSetting = <K extends keyof ReferenceSettings>(key: K, value: ReferenceSettings[K]) => {
+    setState({
+      settings: {
+        ...settings,
+        referenceSettings: { ...refSettings, [key]: value }
+      }
     });
   };
 
@@ -59,49 +86,58 @@ export function FormatTextModal({ isOpen, onClose }: FormatTextModalProps) {
     { id: 'bottom', label: 'Bottom', icon: <AlignVerticalJustifyEnd className="w-4 h-4" /> },
   ];
 
+  const justifications: { id: TextJustification; label: string; icon: React.ReactNode }[] = [
+    { id: 'left', label: 'Left', icon: <AlignLeft className="w-4 h-4" /> },
+    { id: 'center', label: 'Center', icon: <AlignCenter className="w-4 h-4" /> },
+    { id: 'right', label: 'Right', icon: <AlignRight className="w-4 h-4" /> },
+    { id: 'justify', label: 'Justify', icon: <AlignJustify className="w-4 h-4" /> },
+  ];
+
+  const positions: { id: ReferencePosition; label: string }[] = [
+    { id: 'top-left', label: 'Top L' },
+    { id: 'top-center', label: 'Top C' },
+    { id: 'top-right', label: 'Top R' },
+    { id: 'bottom-left', label: 'Bot L' },
+    { id: 'bottom-center', label: 'Bot C' },
+    { id: 'bottom-right', label: 'Bot R' },
+  ];
+
   const fontWeights: { id: FontWeight; label: string }[] = [
-    { id: 'normal', label: 'Normal' },
-    { id: 'medium', label: 'Medium' },
-    { id: 'semibold', label: 'Semibold' },
+    { id: 'normal', label: 'Norm' },
+    { id: 'medium', label: 'Med' },
+    { id: 'semibold', label: 'Semi' },
     { id: 'bold', label: 'Bold' },
-    { id: 'black', label: 'Black' },
+    { id: 'black', label: 'Blk' },
   ];
 
   const shadows: { id: TextShadowStyle; label: string }[] = [
     { id: 'none', label: 'None' },
-    { id: 'subtle', label: 'Subtle' },
-    { id: 'medium', label: 'Medium' },
-    { id: 'strong', label: 'Strong' },
+    { id: 'subtle', label: 'Subt' },
+    { id: 'medium', label: 'Med' },
+    { id: 'strong', label: 'Stro' },
     { id: 'glow', label: 'Glow' },
   ];
 
   const outlines: { id: TextOutlineStyle; label: string }[] = [
     { id: 'none', label: 'None' },
-    { id: 'thin-dark', label: 'Thin Dark' },
-    { id: 'thick-dark', label: 'Thick Dark' },
-    { id: 'thin-light', label: 'Thin Light' },
+    { id: 'thin-dark', label: 'Tn-Dk' },
+    { id: 'thick-dark', label: 'Tk-Dk' },
+    { id: 'thin-light', label: 'Tn-Lt' },
   ];
 
   const presetColors = [
-    '#ffffff',
-    '#fef08a',
-    '#fbbf24',
-    '#38bdf8',
-    '#34d399',
-    '#f472b6',
-    '#c084fc',
-    '#ff7b72',
+    '#ffffff', '#fef08a', '#fbbf24', '#38bdf8', '#34d399', '#f472b6', '#c084fc', '#ff7b72',
   ];
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-7xl max-h-[95vh] flex flex-col overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
+        <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5 shrink-0">
           <h2 className="text-sm font-semibold uppercase tracking-widest text-white/90 flex items-center gap-2">
             <Type className="w-4 h-4 text-blue-400" />
-            Format Text
+            1. Format Verse Text & Scripture Reference
           </h2>
           <button 
             onClick={onClose}
@@ -111,228 +147,307 @@ export function FormatTextModal({ isOpen, onClose }: FormatTextModalProps) {
           </button>
         </div>
 
-        {/* Form & Live Preview Body */}
-        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar text-sm">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-            
-            {/* Left Column: Formatting Controls */}
-            <div className="md:col-span-7 flex flex-col gap-6">
-              
-              {/* i. Vertical Alignment */}
-              <div>
-                <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">
-                  Text Alignment
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {alignments.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => updateSetting('alignment', item.id)}
-                      className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-semibold transition-all ${
-                        (settings.alignment || 'center') === item.id
-                          ? 'bg-blue-600/30 border-blue-500 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
-                          : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white'
-                      }`}
-                    >
-                      {item.icon}
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+        {/* Body */}
+        <div className="flex-1 overflow-hidden flex flex-col md:flex-row text-sm">
+          
+          {/* COLUMN 1: Verse Settings */}
+          <div className="w-full md:w-1/3 p-6 overflow-y-auto custom-scrollbar flex flex-col gap-6">
+            <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2 border-b border-white/10 pb-2">
+              <Type className="w-5 h-5 text-blue-400" />
+              Format Verse Text
+            </h3>
 
-              {/* ii. Font Size */}
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">
-                    Font Size
-                  </label>
-                  <span className="text-xs font-mono font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
-                    {settings.fontSize}px
-                  </span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <input
-                    type="range"
-                    min={20}
-                    max={120}
-                    step={2}
-                    value={settings.fontSize}
-                    onChange={(e) => updateSetting('fontSize', parseInt(e.target.value))}
-                    className="flex-1 h-2 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(59,130,246,0.8)]"
-                  />
-                </div>
+            {/* Global: Overlay Opacity */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">Background Dim (Opacity)</label>
+                <span className="text-xs font-mono font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
+                  {settings.overlayOpacity ?? 50}%
+                </span>
               </div>
-
-              {/* iii. Font Weight */}
-              <div>
-                <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">
-                  Font Weight
-                </label>
-                <div className="grid grid-cols-5 gap-1.5">
-                  {fontWeights.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => updateSetting('fontWeight', item.id)}
-                      className={`py-2 rounded-lg border text-xs font-medium transition-all ${
-                        (settings.fontWeight || 'bold') === item.id
-                          ? 'bg-blue-600/30 border-blue-500 text-blue-400 font-bold shadow-[0_0_10px_rgba(59,130,246,0.3)]'
-                          : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white'
-                      }`}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* iv. Text Shadow */}
-              <div>
-                <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">
-                  Text Shadow
-                </label>
-                <div className="grid grid-cols-5 gap-1.5">
-                  {shadows.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => updateSetting('textShadow', item.id)}
-                      className={`py-2 rounded-lg border text-xs font-medium transition-all ${
-                        (settings.textShadow || 'medium') === item.id
-                          ? 'bg-blue-600/30 border-blue-500 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
-                          : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white'
-                      }`}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* v. Text Outline */}
-              <div>
-                <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">
-                  Text Outline Style
-                </label>
-                <div className="grid grid-cols-4 gap-2">
-                  {outlines.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => updateSetting('textOutline', item.id)}
-                      className={`py-2 rounded-lg border text-xs font-medium transition-all ${
-                        (settings.textOutline || 'none') === item.id
-                          ? 'bg-blue-600/30 border-blue-500 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
-                          : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white'
-                      }`}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* vi. Outline Color */}
-              <div>
-                <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">
-                  Outline Color
-                </label>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {['#000000', '#ffffff', '#fbbf24', '#ef4444', '#38bdf8', '#22c55e', '#a855f7', '#f97316'].map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => updateSetting('outlineColor', color)}
-                      className={`w-8 h-8 rounded-full border-2 transition-all ${
-                        (settings.outlineColor || '#000000').toLowerCase() === color.toLowerCase()
-                          ? 'border-blue-500 scale-110 shadow-[0_0_10px_rgba(59,130,246,0.8)]'
-                          : 'border-white/20 hover:scale-105'
-                      }`}
-                      style={{ backgroundColor: color }}
-                      title={color}
-                    />
-                  ))}
-                  
-                  {/* Custom Color Input */}
-                  <div className="relative flex items-center ml-2">
-                    <input
-                      type="color"
-                      value={settings.outlineColor || '#000000'}
-                      onChange={(e) => updateSetting('outlineColor', e.target.value)}
-                      className="w-8 h-8 rounded-full border-0 bg-transparent cursor-pointer p-0 overflow-hidden"
-                      title="Choose custom outline color"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* vii. Text Color */}
-              <div>
-                <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">
-                  Text Color
-                </label>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {presetColors.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => updateSetting('textColor', color)}
-                      className={`w-8 h-8 rounded-full border-2 transition-all ${
-                        (settings.textColor || '#ffffff').toLowerCase() === color.toLowerCase()
-                          ? 'border-blue-500 scale-110 shadow-[0_0_10px_rgba(59,130,246,0.8)]'
-                          : 'border-white/20 hover:scale-105'
-                      }`}
-                      style={{ backgroundColor: color }}
-                      title={color}
-                    />
-                  ))}
-                  
-                  {/* Custom Color Input */}
-                  <div className="relative flex items-center ml-2">
-                    <input
-                      type="color"
-                      value={settings.textColor || '#ffffff'}
-                      onChange={(e) => updateSetting('textColor', e.target.value)}
-                      className="w-8 h-8 rounded-full border-0 bg-transparent cursor-pointer p-0 overflow-hidden"
-                      title="Choose custom color"
-                    />
-                  </div>
-                </div>
-              </div>
-
+              <input
+                type="range" min={0} max={100} step={5}
+                value={settings.overlayOpacity ?? 50}
+                onChange={(e) => updateGlobalSetting('overlayOpacity', parseInt(e.target.value))}
+                className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(59,130,246,0.8)]"
+              />
             </div>
 
-            {/* Right Column: Live Preview Box */}
-            <div className="md:col-span-5 flex flex-col gap-3 sticky top-0">
-              <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-white/50">
-                <span className="flex items-center gap-1.5 text-blue-400">
-                  <Eye className="w-3.5 h-3.5" /> Live Preview
-                </span>
-                <span className="text-[10px] text-white/30">16:9 Viewport</span>
+            {/* Verse Alignment */}
+            <div>
+              <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Vertical Alignment</label>
+              <div className="grid grid-cols-3 gap-2">
+                {alignments.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => updateVerseSetting('alignment', item.id)}
+                    className={`flex items-center justify-center gap-2 py-2 px-2 rounded-xl border text-xs font-semibold transition-all ${
+                      verseSettings.alignment === item.id ? 'bg-blue-600/30 border-blue-500 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
+                    }`}
+                  >
+                    {item.icon} {item.label}
+                  </button>
+                ))}
               </div>
+            </div>
 
-              <div className="aspect-video bg-black rounded-xl border border-white/15 overflow-hidden relative shadow-2xl group">
-                <PresentationView 
-                  state={previewState} 
-                  isPreview={true} 
-                  className="w-full h-full"
-                />
+            {/* Verse Justification */}
+            <div>
+              <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Text Justification</label>
+              <div className="grid grid-cols-4 gap-2">
+                {justifications.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => updateVerseSetting('justification', item.id)}
+                    className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-xl border text-xs font-semibold transition-all ${
+                      (verseSettings.justification || 'justify') === item.id ? 'bg-blue-600/30 border-blue-500 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
+                    }`}
+                  >
+                    {item.icon} {item.label}
+                  </button>
+                ))}
               </div>
+            </div>
 
-              <p className="text-[11px] text-white/40 text-center italic">
-                Changes apply live to preview and presentation screen.
-              </p>
+            {/* Verse Font Size */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">Font Size</label>
+                <span className="text-xs font-mono font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">{verseSettings.fontSize}px</span>
+              </div>
+              <input
+                type="range" min={20} max={120} step={2}
+                value={verseSettings.fontSize}
+                onChange={(e) => updateVerseSetting('fontSize', parseInt(e.target.value))}
+                className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:rounded-full"
+              />
+            </div>
+
+            {/* Verse Font Weight */}
+            <div>
+              <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Font Weight</label>
+              <div className="grid grid-cols-5 gap-1.5">
+                {fontWeights.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => updateVerseSetting('fontWeight', item.id)}
+                    className={`py-1.5 rounded-lg border text-xs font-medium transition-all ${verseSettings.fontWeight === item.id ? 'bg-blue-600/30 border-blue-500 text-blue-400' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'}`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Verse Text Shadow */}
+            <div>
+              <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Text Shadow</label>
+              <div className="grid grid-cols-5 gap-1.5">
+                {shadows.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => updateVerseSetting('textShadow', item.id)}
+                    className={`py-1.5 rounded-lg border text-xs font-medium transition-all ${verseSettings.textShadow === item.id ? 'bg-blue-600/30 border-blue-500 text-blue-400' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'}`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Verse Text Outline */}
+            <div>
+              <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Text Outline Style</label>
+              <div className="grid grid-cols-4 gap-2">
+                {outlines.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => updateVerseSetting('textOutline', item.id)}
+                    className={`py-1.5 rounded-lg border text-xs font-medium transition-all ${verseSettings.textOutline === item.id ? 'bg-blue-600/30 border-blue-500 text-blue-400' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'}`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Verse Colors */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Text Color</label>
+                <div className="flex flex-wrap gap-2">
+                  {presetColors.map((color) => (
+                    <button
+                      key={color} onClick={() => updateVerseSetting('textColor', color)}
+                      className={`w-6 h-6 rounded-full border-2 transition-all ${(verseSettings.textColor || '#ffffff').toLowerCase() === color.toLowerCase() ? 'border-blue-500 scale-110' : 'border-white/20 hover:scale-105'}`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Outline Color</label>
+                <div className="flex flex-wrap gap-2">
+                  {presetColors.map((color) => (
+                    <button
+                      key={color} onClick={() => updateVerseSetting('outlineColor', color)}
+                      className={`w-6 h-6 rounded-full border-2 transition-all ${(verseSettings.outlineColor || '#000000').toLowerCase() === color.toLowerCase() ? 'border-blue-500 scale-110' : 'border-white/20 hover:scale-105'}`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
 
           </div>
-        </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-white/10 bg-white/5 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all"
-          >
-            Done
-          </button>
-        </div>
+          {/* COLUMN 2: Reference Settings */}
+          <div className="w-full md:w-1/3 p-6 overflow-y-auto custom-scrollbar flex flex-col gap-6 border-t md:border-t-0 md:border-l border-white/10 bg-black/20">
+            <h3 className="text-lg font-bold text-white mb-2 flex justify-between items-center border-b border-white/10 pb-2">
+              <span className="flex items-center gap-2"><LayoutGrid className="w-5 h-5 text-purple-400" /> Format Scripture Reference</span>
+              <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.showReference ?? true}
+                  onChange={(e) => updateGlobalSetting('showReference', e.target.checked)}
+                  className="rounded border-white/20 bg-black/50 text-purple-500 focus:ring-purple-500"
+                />
+                <span className="text-white/70">Show</span>
+              </label>
+            </h3>
 
+            {/* Reference Position */}
+            <div>
+              <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Screen Position</label>
+              <div className="grid grid-cols-3 gap-2">
+                {positions.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => updateRefSetting('position', item.id)}
+                    className={`py-2 px-1 rounded-xl border text-xs font-semibold transition-all ${
+                      refSettings.position === item.id ? 'bg-purple-600/30 border-purple-500 text-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.3)]' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Reference Font Size */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">Font Size</label>
+                <span className="text-xs font-mono font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">{refSettings.fontSize}px</span>
+              </div>
+              <input
+                type="range" min={10} max={100} step={1}
+                value={refSettings.fontSize}
+                onChange={(e) => updateRefSetting('fontSize', parseInt(e.target.value))}
+                className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-purple-500 [&::-webkit-slider-thumb]:rounded-full"
+              />
+            </div>
+
+            {/* Reference Font Weight */}
+            <div>
+              <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Font Weight</label>
+              <div className="grid grid-cols-5 gap-1.5">
+                {fontWeights.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => updateRefSetting('fontWeight', item.id)}
+                    className={`py-1.5 rounded-lg border text-xs font-medium transition-all ${refSettings.fontWeight === item.id ? 'bg-purple-600/30 border-purple-500 text-purple-400' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'}`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Reference Text Shadow */}
+            <div>
+              <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Text Shadow</label>
+              <div className="grid grid-cols-5 gap-1.5">
+                {shadows.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => updateRefSetting('textShadow', item.id)}
+                    className={`py-1.5 rounded-lg border text-xs font-medium transition-all ${refSettings.textShadow === item.id ? 'bg-purple-600/30 border-purple-500 text-purple-400' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'}`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Reference Text Outline */}
+            <div>
+              <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Text Outline Style</label>
+              <div className="grid grid-cols-4 gap-2">
+                {outlines.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => updateRefSetting('textOutline', item.id)}
+                    className={`py-1.5 rounded-lg border text-xs font-medium transition-all ${refSettings.textOutline === item.id ? 'bg-purple-600/30 border-purple-500 text-purple-400' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'}`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Reference Colors */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Text Color</label>
+                <div className="flex flex-wrap gap-2">
+                  {presetColors.map((color) => (
+                    <button
+                      key={color} onClick={() => updateRefSetting('textColor', color)}
+                      className={`w-6 h-6 rounded-full border-2 transition-all ${(refSettings.textColor || '#ffffff').toLowerCase() === color.toLowerCase() ? 'border-purple-500 scale-110' : 'border-white/20 hover:scale-105'}`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Outline Color</label>
+                <div className="flex flex-wrap gap-2">
+                  {presetColors.map((color) => (
+                    <button
+                      key={color} onClick={() => updateRefSetting('outlineColor', color)}
+                      className={`w-6 h-6 rounded-full border-2 transition-all ${(refSettings.outlineColor || '#000000').toLowerCase() === color.toLowerCase() ? 'border-purple-500 scale-110' : 'border-white/20 hover:scale-105'}`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* COLUMN 3: Live Preview */}
+          <div className="w-full md:w-1/3 p-6 flex flex-col border-t md:border-t-0 md:border-l border-white/10">
+            <h3 className="text-lg font-bold text-white/90 mb-4 flex items-center gap-2 border-b border-white/10 pb-2">
+              <Eye className="w-5 h-5 text-green-400" />
+              Live Preview
+            </h3>
+            
+            <div className="w-full aspect-video bg-black rounded-xl border border-white/20 overflow-hidden shadow-2xl relative">
+              <PresentationView state={previewState} isPreview={true} />
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={onClose}
+                className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-6 rounded-xl transition-all shadow-lg"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
   );

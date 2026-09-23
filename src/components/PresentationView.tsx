@@ -47,6 +47,7 @@ export function PresentationView({
   // Using a ref (not state) lets the layout effect detect changes synchronously
   // without any race against useEffect.
   const prevMeasureKeyRef = useRef('');
+  const prevScaleFactorRef = useRef(scaleFactor);
 
   // Measure container dimensions for relative canvas scaling
   useEffect(() => {
@@ -68,49 +69,49 @@ export function PresentationView({
   }, []);
 
   const settings = state.settings || {};
-  const alignment = settings.alignment || 'center';
-  const fontSizeSetting = settings.fontSize ?? 90;
-  const fontWeightSetting = settings.fontWeight || 'bold';
-  const textShadowSetting = settings.textShadow || 'medium';
-  const textOutlineSetting = settings.textOutline || 'none';
-  const outlineColorSetting = settings.outlineColor || '#000000';
-  const textColorSetting = settings.textColor || '#ffffff';
+  const verseSettings = settings.verseSettings || {
+    fontSize: 90,
+    alignment: 'center',
+    justification: 'justify',
+    fontWeight: 'bold',
+    textShadow: 'medium',
+    textOutline: 'none',
+    outlineColor: '#000000',
+    textColor: '#ffffff',
+  };
+  const refSettings = settings.referenceSettings || {
+    fontSize: 45,
+    position: 'bottom-right',
+    fontWeight: 'semibold',
+    textShadow: 'medium',
+    textOutline: 'none',
+    outlineColor: '#000000',
+    textColor: '#ffffff',
+  };
 
-  // Compute relative base font size
-  const relativeFontSize = Math.max(10, Math.round(fontSizeSetting * scaleFactor));
-  const relativeRefFontSize = Math.max(12, Math.round(36 * scaleFactor));
+  const alignment = verseSettings.alignment || 'center';
+  const showReference = settings.showReference ?? true;
+
+  // Compute relative base font sizes
+  const relativeVerseFontSize = Math.max(10, Math.round((verseSettings.fontSize || 90) * scaleFactor));
+  const relativeRefFontSize = Math.max(12, Math.round((refSettings.fontSize || 45) * scaleFactor));
   const relativePadding = Math.max(8, Math.round(48 * scaleFactor));
 
   // Key that uniquely identifies the current verse + all settings that affect text size.
-  // When this changes we restart the measurement cycle from ratio=1.0.
   const measureKey = [
     state.scripture?.reference,
     state.scripture?.text,
-    fontSizeSetting,
+    verseSettings.fontSize,
+    verseSettings.fontWeight,
+    verseSettings.textOutline,
     alignment,
-    String(settings.showReference),
-    fontWeightSetting,
-    textShadowSetting,
-    textOutlineSetting,
-    outlineColorSetting,
-    textColorSetting,
+    String(showReference),
+    refSettings.fontSize,
+    refSettings.fontWeight,
+    refSettings.textOutline,
+    refSettings.position,
   ].join('||');
 
-  // ─── Single layout effect handles BOTH reset detection AND measurement ───────
-  //
-  // WHY one effect?
-  // React's commit phase runs useLayoutEffect BEFORE useEffect.
-  // The previous approach used a useEffect to reset autoScaleRatio → 1.0, but the
-  // layout effect had already fired its measurement with the OLD stale ratio first,
-  // so every verse change required an extra refresh cycle to converge.
-  //
-  // FIX: detect verse/settings changes via prevMeasureKeyRef (synchronous, no race).
-  // On change  → hide content, reset ratio to 1.0, bail out early.
-  //              The re-render from setAutoScaleRatio(1.0) brings the DOM to ratio=1.0,
-  //              then this effect runs again and measures correctly in one pass.
-  // No change  → measure the DOM (which is at current autoScaleRatio), compute the
-  //              ideal ratio, apply it. When the ratio stabilises, reveal the content.
-  // ─────────────────────────────────────────────────────────────────────────────
   useIsomorphicLayoutEffect(() => {
     const container = containerRef.current;
     const content = contentRef.current;
@@ -120,52 +121,47 @@ export function PresentationView({
     const containerW = container.clientWidth;
     if (containerH <= 0 || containerW <= 0) return;
 
-    // ── Detect verse / settings change ──────────────────────────────────────
-    if (measureKey !== prevMeasureKeyRef.current) {
+    const scaleFactorChanged = scaleFactor !== prevScaleFactorRef.current;
+
+    if (measureKey !== prevMeasureKeyRef.current || scaleFactorChanged) {
       prevMeasureKeyRef.current = measureKey;
+      prevScaleFactorRef.current = scaleFactor;
       setIsVisible(false);
 
       if (autoScaleRatio !== 1.0) {
-        // Reset ratio → triggers re-render → this effect fires again with DOM at 1.0
         setAutoScaleRatio(1.0);
-        return; // Don't measure yet; wait for the clean re-render
+        return;
       }
-      // Already at 1.0 → fall through and measure directly
     }
 
-    // ── Measurement pass ─────────────────────────────────────────────────────
     const paddingY = alignment === 'center' ? 32 : relativePadding + 16;
     const availableH = Math.max(80, containerH - paddingY * 2);
     const availableW = Math.max(80, containerW * 0.92);
 
+    // Measure the wrapper which contains both verse and absolute reference bounding box
     const scrollH = content.scrollHeight;
     const scrollW = content.scrollWidth;
     if (scrollH <= 0) return;
 
-    // Project what the dimensions would be at ratio=1.0
     const unscaledH = scrollH / autoScaleRatio;
     const unscaledW = scrollW / autoScaleRatio;
 
     const hRatio = availableH / unscaledH;
     const wRatio = availableW / unscaledW;
 
-    // Never scale UP beyond the user's configured size
     let idealRatio = Math.min(1.0, hRatio, wRatio);
     idealRatio = Math.max(0.15, idealRatio);
 
     if (Math.abs(idealRatio - autoScaleRatio) > 0.005) {
-      // Not yet stable — apply new ratio; next pass will confirm
       setAutoScaleRatio(idealRatio);
     } else {
-      // Stable — reveal at correct size
       setIsVisible(true);
     }
   }, [measureKey, scaleFactor, autoScaleRatio, relativePadding, alignment]);
 
-  const effectiveFontSize = Math.max(9, Math.round(relativeFontSize * autoScaleRatio));
-  const effectiveRefFontSize = Math.max(11, Math.round(relativeRefFontSize * autoScaleRatio));
+  const effectiveVerseFontSize = Math.max(9, Math.round(relativeVerseFontSize * autoScaleRatio));
+  const effectiveRefFontSize = Math.max(9, Math.round(relativeRefFontSize * autoScaleRatio));
 
-  // Alignment classes
   let alignmentClass = "justify-center";
   let paddingStyle: React.CSSProperties = {};
 
@@ -177,7 +173,6 @@ export function PresentationView({
     paddingStyle = { paddingBottom: `${relativePadding}px` };
   }
 
-  // Font weight mapping
   const fontWeightMap: Record<string, number> = {
     normal: 400,
     medium: 500,
@@ -185,31 +180,30 @@ export function PresentationView({
     bold: 700,
     black: 900,
   };
-  const computedFontWeight = fontWeightMap[fontWeightSetting] || 700;
 
-  // Text Shadow presets
   const shadowMap: Record<string, string> = {
     none: "none",
     subtle: "0 2px 4px rgba(0,0,0,0.7)",
     medium: "0 4px 10px rgba(0,0,0,0.85), 0 2px 4px rgba(0,0,0,0.7)",
     strong: "0 8px 24px rgba(0,0,0,1), 0 2px 8px rgba(0,0,0,0.9)",
-    glow: `0 0 20px ${textColorSetting}, 0 0 10px ${textColorSetting}`,
   };
 
-  // Text Outline stroke mapping
-  const outlineMap: Record<string, string> = {
-    none: "",
-    "thin-dark": `-1px -1px 0 ${outlineColorSetting}, 1px -1px 0 ${outlineColorSetting}, -1px 1px 0 ${outlineColorSetting}, 1px 1px 0 ${outlineColorSetting}`,
-    "thick-dark": `-2px -2px 0 ${outlineColorSetting}, 2px -2px 0 ${outlineColorSetting}, -2px 2px 0 ${outlineColorSetting}, 2px 2px 0 ${outlineColorSetting}`,
-    "thin-light": `-1px -1px 0 ${outlineColorSetting}, 1px -1px 0 ${outlineColorSetting}, -1px 1px 0 ${outlineColorSetting}, 1px 1px 0 ${outlineColorSetting}`,
+  const buildTextShadow = (shadowStyle: string, outlineStyle: string, outlineColor: string, textColor: string) => {
+    let glow = shadowStyle === 'glow' ? `0 0 20px ${textColor}, 0 0 10px ${textColor}` : "";
+    let shadowVal = shadowStyle === 'glow' ? glow : (shadowMap[shadowStyle] || shadowMap.medium);
+    
+    let outlineVal = "";
+    if (outlineStyle === "thin-dark" || outlineStyle === "thin-light") {
+      outlineVal = `-1px -1px 0 ${outlineColor}, 1px -1px 0 ${outlineColor}, -1px 1px 0 ${outlineColor}, 1px 1px 0 ${outlineColor}`;
+    } else if (outlineStyle === "thick-dark") {
+      outlineVal = `-2px -2px 0 ${outlineColor}, 2px -2px 0 ${outlineColor}, -2px 2px 0 ${outlineColor}, 2px 2px 0 ${outlineColor}`;
+    }
+
+    return [outlineVal, shadowVal !== "none" ? shadowVal : ""].filter(Boolean).join(", ");
   };
 
-  const shadowVal = shadowMap[textShadowSetting] || shadowMap.medium;
-  const outlineVal = outlineMap[textOutlineSetting] || "";
-
-  const combinedTextShadow = [outlineVal, shadowVal !== "none" ? shadowVal : ""]
-    .filter(Boolean)
-    .join(", ");
+  const verseTextShadow = buildTextShadow(verseSettings.textShadow, verseSettings.textOutline, verseSettings.outlineColor, verseSettings.textColor);
+  const refTextShadow = buildTextShadow(refSettings.textShadow, refSettings.textOutline, refSettings.outlineColor, refSettings.textColor);
 
   const displayReference = (() => {
     if (!state.scripture) return "";
@@ -224,6 +218,19 @@ export function PresentationView({
 
   const hasActiveScripture = state.type === "scripture" && Boolean(state.scripture?.text);
   const effectiveOverlayOpacity = hasActiveScripture ? ((settings.overlayOpacity ?? 50) / 100) : 0;
+
+  // Map reference position setting to flow order and alignment
+  const isRefTop = refSettings.position?.startsWith('top');
+  const refAlignClass = refSettings.position?.includes('left') ? 'self-start text-left' :
+                        refSettings.position?.includes('right') ? 'self-end text-right' :
+                        'self-center text-center';
+
+  const verseJustifyClass = {
+    'left': 'text-left',
+    'center': 'text-center',
+    'right': 'text-right',
+    'justify': 'text-justify',
+  }[verseSettings.justification || 'justify'] || 'text-justify';
 
   if (state.type === "black") {
     return (
@@ -298,37 +305,34 @@ export function PresentationView({
         </div>
       )}
 
-      {/* Dark Overlay - fades to 0 when text is cleared */}
+      {/* Dark Overlay */}
       <div
         className="absolute inset-0 z-10 bg-black pointer-events-none transition-opacity duration-500"
         style={{ opacity: effectiveOverlayOpacity }}
       />
 
-      {/* Screen Cleared Indicator (preview only) */}
+      {/* Screen Cleared Indicator */}
       {state.type === "clear" && isPreview && (
         <div className="text-white/30 uppercase tracking-widest text-xs font-semibold z-20 relative">
           Screen Cleared
         </div>
       )}
 
-      {/* Scripture Content
-          opacity stays 0 until the layout effect confirms the correct autoScaleRatio,
-          preventing long verses from shooting off-screen and short verses from
-          appearing at a wrong (shrunken) size. */}
+      {/* Scripture Content */}
       {state.type === "scripture" && state.scripture && (
         <div
           style={{ opacity: isVisible ? 1 : 0, transition: "opacity 0.15s ease-in" }}
-          className="relative z-20 w-[92%] max-w-[95%] flex flex-col items-center justify-center text-center"
+          className="relative z-20 w-[92%] max-w-[95%] flex flex-col items-center justify-center"
         >
-          <div ref={contentRef} className="flex flex-col items-center justify-center text-center">
-            {settings.showReference && (
+          <div ref={contentRef} className="flex flex-col max-w-full" style={{ gap: '10px' }}>
+            {showReference && isRefTop && (
               <h1
-                className="tracking-widest uppercase mb-[0.5em] opacity-90 font-serif shrink-0"
+                className={`tracking-widest uppercase font-serif shrink-0 m-0 ${refAlignClass}`}
                 style={{
                   fontSize: `${effectiveRefFontSize}px`,
-                  fontWeight: computedFontWeight,
-                  color: textColorSetting,
-                  textShadow: combinedTextShadow,
+                  fontWeight: fontWeightMap[refSettings.fontWeight] || 700,
+                  color: refSettings.textColor,
+                  textShadow: refTextShadow,
                 }}
               >
                 {displayReference}
@@ -336,16 +340,30 @@ export function PresentationView({
             )}
 
             <p
-              className="font-serif leading-relaxed text-balance"
+              className={`font-serif leading-relaxed m-0 ${verseJustifyClass} ${verseSettings.justification !== 'justify' ? 'text-balance' : ''}`}
               style={{
-                fontSize: `${effectiveFontSize}px`,
-                fontWeight: computedFontWeight,
-                color: textColorSetting,
-                textShadow: combinedTextShadow,
+                fontSize: `${effectiveVerseFontSize}px`,
+                fontWeight: fontWeightMap[verseSettings.fontWeight] || 700,
+                color: verseSettings.textColor,
+                textShadow: verseTextShadow,
               }}
             >
               {cleanScriptureText(state.scripture.text)}
             </p>
+
+            {showReference && !isRefTop && (
+              <h1
+                className={`tracking-widest uppercase font-serif shrink-0 m-0 ${refAlignClass}`}
+                style={{
+                  fontSize: `${effectiveRefFontSize}px`,
+                  fontWeight: fontWeightMap[refSettings.fontWeight] || 700,
+                  color: refSettings.textColor,
+                  textShadow: refTextShadow,
+                }}
+              >
+                {displayReference}
+              </h1>
+            )}
           </div>
         </div>
       )}

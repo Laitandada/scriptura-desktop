@@ -8,16 +8,35 @@ export type FontWeight = 'normal' | 'medium' | 'semibold' | 'bold' | 'black';
 export type TextShadowStyle = 'none' | 'subtle' | 'medium' | 'strong' | 'glow';
 export type TextOutlineStyle = 'none' | 'thin-dark' | 'thick-dark' | 'thin-light';
 
-export interface PresentationSettings {
+export type ReferencePosition = 'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right';
+export type TextJustification = 'left' | 'center' | 'right' | 'justify';
+
+export interface VerseSettings {
   fontSize: number;
+  alignment: TextAlignment;
+  justification?: TextJustification;
+  fontWeight: FontWeight;
+  textShadow: TextShadowStyle;
+  textOutline: TextOutlineStyle;
+  outlineColor: string;
+  textColor: string;
+}
+
+export interface ReferenceSettings {
+  fontSize: number;
+  position: ReferencePosition;
+  fontWeight: FontWeight;
+  textShadow: TextShadowStyle;
+  textOutline: TextOutlineStyle;
+  outlineColor: string;
+  textColor: string;
+}
+
+export interface PresentationSettings {
   overlayOpacity: number;
   showReference: boolean;
-  alignment?: TextAlignment;
-  fontWeight?: FontWeight;
-  textShadow?: TextShadowStyle;
-  textOutline?: TextOutlineStyle;
-  outlineColor?: string;
-  textColor?: string;
+  verseSettings?: VerseSettings;
+  referenceSettings?: ReferenceSettings;
 }
 
 export interface PresentationStateData {
@@ -63,15 +82,27 @@ interface PresentationStore {
 const defaultState: PresentationStateData = {
   type: 'clear',
   settings: {
-    fontSize: 90,
     overlayOpacity: 50,
     showReference: true,
-    alignment: 'center',
-    fontWeight: 'bold',
-    textShadow: 'medium',
-    textOutline: 'none',
-    outlineColor: '#000000',
-    textColor: '#ffffff',
+    verseSettings: {
+      fontSize: 90,
+      alignment: 'center',
+      justification: 'justify',
+      fontWeight: 'bold',
+      textShadow: 'medium',
+      textOutline: 'none',
+      outlineColor: '#000000',
+      textColor: '#ffffff',
+    },
+    referenceSettings: {
+      fontSize: 45,
+      position: 'bottom-right',
+      fontWeight: 'semibold',
+      textShadow: 'medium',
+      textOutline: 'none',
+      outlineColor: '#000000',
+      textColor: '#ffffff',
+    }
   },
 };
 
