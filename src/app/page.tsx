@@ -1118,9 +1118,9 @@ export default function Dashboard() {
           <div className="h-4 w-[1px] bg-white/20"></div>
 
           <div className="flex items-center gap-2 text-sm">
-            <span className={`w-2 h-2 rounded-full ${state.type !== 'black' && state.type !== 'clear' ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-white/20'}`}></span>
+            <span className={`w-2 h-2 rounded-full ${state.type !== 'black' && (state.type !== 'clear' || (state.background?.type && state.background.type !== 'none')) ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-white/20'}`}></span>
             <span className="text-white/60 uppercase tracking-wider text-xs font-semibold">
-              {state.type !== 'black' && state.type !== 'clear' ? 'Projecting' : 'Standby'}
+              {state.type !== 'black' && (state.type !== 'clear' || (state.background?.type && state.background.type !== 'none')) ? 'Projecting' : 'Standby'}
             </span>
           </div>
 

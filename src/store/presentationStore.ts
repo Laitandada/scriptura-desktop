@@ -163,8 +163,15 @@ export const usePresentationStore = create<PresentationStore>((set, get) => {
     },
     setBackground: (type, url) => {
       set((prev) => {
+        let newType = prev.state.type;
+        // Wake up the screen to show the background if it's currently hidden by black or presentation mode
+        if (newType === 'black' || newType === 'presentation') {
+          newType = prev.state.scripture?.reference ? 'scripture' : 'clear';
+        }
+
         const newState = {
           ...prev.state,
+          type: newType as PresentationStateType,
           background: { type, url },
         };
         syncState(newState, prev.activeSessionId);
