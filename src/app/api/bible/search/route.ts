@@ -47,7 +47,7 @@ export async function GET(req: Request) {
     }
 
     const chapter = parseInt(exactChapter, 10);
-    const verseStart = exactVerseStart ? parseInt(exactVerseStart, 10) : undefined;
+    const verseStart = exactVerseStart ? parseInt(exactVerseStart, 10) : 1;
     const verseEnd = exactVerseEnd ? parseInt(exactVerseEnd, 10) : undefined;
 
     const verses = await prisma.bibleVerse.findMany({

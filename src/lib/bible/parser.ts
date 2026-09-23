@@ -270,35 +270,8 @@ export async function parseReferences(
     
     let blockResolved = false;
 
-    // Fast path for context-only parsing (e.g. user just says "verse 5" or "5")
-    if (words.length === 0 && context && numberBlockText.trim().length > 0) {
-      const cleanNb = numberBlockText.trim();
-      let cVerseStart: number | undefined;
-      let cVerseEnd: number | undefined;
-
-      const justVerse = cleanNb.match(/^(?:verses?\s+)?(\d+)(?:\s+(?:to|through|-|and|,)\s+(?:verse\s+)?(\d+))?$/i);
-      if (justVerse) {
-        cVerseStart = parseInt(justVerse[1]);
-        if (justVerse[2]) cVerseEnd = parseInt(justVerse[2]);
-      }
-
-      if (cVerseStart !== undefined) {
-        const isValid = await validateRef(context.book, context.chapter, cVerseStart, cVerseEnd);
-        if (isValid) {
-          results.push({
-            book: context.book,
-            chapter: context.chapter,
-            verseStart: cVerseStart,
-            verseEnd: cVerseEnd,
-            confidence: "high",
-            originalBookText: context.book,
-            raw: text
-          });
-          blockResolved = true;
-          continue; // Move to next numberBlock match
-        }
-      }
-    }
+    // We no longer do the naive "fast path" here because it fails if there are filler words like "let's read from verse 20".
+    // We will try book matching first, and if that fails, we use the context fallback at the end.
 
     const candidates = generateCandidates(numberBlockText);
     
@@ -371,6 +344,65 @@ export async function parseReferences(
         }
       }
       if (blockResolved) break;
+    }
+
+    if (blockResolved) continue;
+
+    // Context Fallback: No book was found in the prefix, but we have a context (from previous detection).
+    if (context) {
+      const isExplicitChapter = match[0].toLowerCase().includes("chapter");
+      const isExplicitVerse = numberBlockText.startsWith("verse") || prefix.toLowerCase().endsWith("verse") || prefix.toLowerCase().endsWith("verses");
+      
+      if (isExplicitChapter) {
+        // They said "chapter X" - keep the book, change the chapter
+        for (const cand of candidates) {
+          const isValid = await validateRef(context.book, cand.chapter, cand.verseStart, cand.verseEnd);
+          if (isValid) {
+            results.push({ book: context.book, chapter: cand.chapter, verseStart: cand.verseStart, verseEnd: cand.verseEnd, isDefaultedVerse: cand.isDefaultedVerse, confidence: "low", originalBookText: context.book, raw: text });
+            blockResolved = true; break;
+          }
+        }
+      } else if (isExplicitVerse) {
+        // They said "verse X" - keep book and chapter, change the verse
+        const cleanNb = numberBlockText.replace(/verses?/gi, '').trim();
+        let cVerseStart: number | undefined;
+        let cVerseEnd: number | undefined;
+        const justVerse = cleanNb.match(/^(\d+)(?:\s+(?:to|through|-|and|,)\s+(?:verse\s+)?(\d+))?$/i);
+        if (justVerse) {
+          cVerseStart = parseInt(justVerse[1]);
+          if (justVerse[2]) cVerseEnd = parseInt(justVerse[2]);
+        } else {
+          const m = cleanNb.match(/(\d+)/);
+          if (m) cVerseStart = parseInt(m[1]);
+        }
+        
+        if (cVerseStart !== undefined) {
+          const isValid = await validateRef(context.book, context.chapter, cVerseStart, cVerseEnd);
+          if (isValid) {
+            results.push({ book: context.book, chapter: context.chapter, verseStart: cVerseStart, verseEnd: cVerseEnd, confidence: "low", originalBookText: context.book, raw: text });
+            blockResolved = true;
+          }
+        }
+      } else {
+        // Ambiguous number (e.g. "let's jump to 20")
+        // Try as a verse in current chapter first
+        const m = numberBlockText.match(/(\d+)/);
+        if (m) {
+          const num = parseInt(m[1]);
+          const isValidVerse = await validateRef(context.book, context.chapter, num);
+          if (isValidVerse) {
+            results.push({ book: context.book, chapter: context.chapter, verseStart: num, confidence: "low", originalBookText: context.book, raw: text });
+            blockResolved = true;
+          } else {
+            // Try as a new chapter in current book
+            const isValidChapter = await validateRef(context.book, num);
+            if (isValidChapter) {
+              results.push({ book: context.book, chapter: num, isDefaultedVerse: true, confidence: "low", originalBookText: context.book, raw: text });
+              blockResolved = true;
+            }
+          }
+        }
+      }
     }
   }
 
