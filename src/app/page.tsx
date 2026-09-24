@@ -118,6 +118,7 @@ export default function Dashboard() {
   const speechProvider = useRef<BrowserSpeechProvider | null>(null);
   const lastDetectedRef = useRef<string>("");
   const voiceQueueRef = useRef<any[]>([]);
+  const transcriptBufferRef = useRef<string[]>([]);
 
   useEffect(() => {
     voiceQueueRef.current = detectedVoiceScriptures;
@@ -441,21 +442,35 @@ export default function Dashboard() {
 
         if (wakeMatch && isFinal && wakeMatch[1].trim().length > 10) {
           const quote = wakeMatch[1].trim();
+          const currentTransId = usePresentationStore.getState().activeTranslationId;
           setIsRecovering(true);
           try {
+            // L1: Try local DB quote matching first (zero tokens, ~17ms)
+            if (currentTransId) {
+              const quoteRes = await fetch('/api/ai/quote-match', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ transcript: quote, translationId: currentTransId })
+              });
+              const quoteData = await quoteRes.json();
+              if (quoteData.candidates && quoteData.candidates.length > 0) {
+                setDetectedVoiceScriptures(prev => mergeScriptureQueues(quoteData.candidates, prev));
+                setIsRecovering(false);
+                return;
+              }
+            }
+            // L2 Fallback: AI search if quote-match found nothing
             const res = await fetch('/api/ai/scripture-search', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ query: quote, translationId: usePresentationStore.getState().activeTranslationId })
+              body: JSON.stringify({ query: quote, translationId: currentTransId })
             });
             const data = await res.json();
             if (data.results && data.results.length > 0) {
-              if (data.results.length > 0) {
-                setDetectedVoiceScriptures(prev => {
-                  const newScriptures = data.results.map((r: any) => ({ ...r, source: 'ai' }));
-                  return mergeScriptureQueues(newScriptures, prev);
-                });
-              }
+              setDetectedVoiceScriptures(prev => {
+                const newScriptures = data.results.map((r: any) => ({ ...r, source: 'ai' }));
+                return mergeScriptureQueues(newScriptures, prev);
+              });
             } else {
               setVoiceError(`Could not find a matching scripture for: "${quote}"`);
             }
@@ -533,6 +548,13 @@ export default function Dashboard() {
             setDetectedVoiceScriptures(prev => mergeScriptureQueues(validFullResults, prev));
           }
         } else if (isFinal) {
+          const currentTransId = usePresentationStore.getState().activeTranslationId;
+
+          // Maintain a rolling buffer of the last 2 final transcripts for semantic context.
+          // This solves the problem where the ASR chunks the speaker cue and the quote into separate events.
+          transcriptBufferRef.current = [...transcriptBufferRef.current.slice(-1), text];
+          const contextualText = transcriptBufferRef.current.join(' ');
+
           // If we had a specific validation error from the database (e.g. verse doesn't exist)
           if (currentTranscriptValidationError) {
             toast.error(currentTranscriptValidationError);
@@ -540,25 +562,62 @@ export default function Dashboard() {
             return;
           }
 
-          // Heuristic: Only hit the AI if the sentence actually looks like it *might* be a reference.
-          // This prevents sending every single sentence of normal preaching to the AI.
+          // Heuristic checks for routing to the right fallback layer
+          // We only use 'text' for explicit triggers to prevent a number/keyword in a previous sentence 
+          // from leaking and constantly triggering the AI fallback on unrelated following sentences.
           const hasNumber = /\d/.test(text) || /\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|twenty|thirty|forty|fifty)\b/i.test(text);
           const hasKeyword = /\b(chapter|verse|scripture|bible|book|read|turn to|somewhere in)\b/i.test(text);
 
+          // L3: Scripture Intelligence — Quotation Matching
+          // Detects when preacher quotes or paraphrases scripture without citing reference.
+          // Uses local DB trigram similarity (zero LLM tokens, ~17ms).
+          const hasQuotationCue = /\b(said|says|wrote|written|declared|commanded|promised|taught|asked|answered|cried|prayed|sang|spoke|speaks)\b/i.test(contextualText);
+          const hasSpeakerCue = /\b(jesus|christ|paul|peter|david|moses|solomon|isaiah|jeremiah|god|lord|spirit|apostle|prophet|psalmist|john|james)\b/i.test(contextualText);
+          const wordCount = contextualText.trim().split(/\s+/).length;
+          const looksLikeQuotation = (hasQuotationCue && wordCount >= 6) || (hasSpeakerCue && wordCount >= 6) || wordCount >= 10;
+
+          // Remove diagnostic toasts now that we found the bug
+          if (looksLikeQuotation && currentTransId) {
+            // Phase 2: Extract Speaker Attribution
+            const speakerMatch = contextualText.match(/\b(jesus|paul|peter|david|moses|solomon|isaiah|jeremiah|john|james)\b/i);
+            const detectedSpeaker = speakerMatch ? speakerMatch[1].toLowerCase() : null;
+
+            try {
+              const quoteRes = await fetch('/api/ai/quote-match', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                  transcript: contextualText, 
+                  translationId: currentTransId,
+                  speakerFilter: detectedSpeaker 
+                })
+              });
+              const quoteData = await quoteRes.json();
+              if (quoteData.candidates && quoteData.candidates.length > 0) {
+                setDetectedVoiceScriptures(prev => mergeScriptureQueues(quoteData.candidates, prev));
+                transcriptBufferRef.current = []; // Clear buffer on success
+                return; // Quote match succeeded — skip AI fallback
+              }
+            } catch (e) {
+              console.error('Quote match error:', e);
+            }
+          }
+
           if (!hasNumber && !hasKeyword) {
-            // It's just normal talking without any numbers or scripture keywords.
-            // Don't waste AI tokens.
+            // It's just normal talking without any numbers or explicit scripture keywords.
+            // Even if it had a quotation cue, it failed the local quote-match above, so we don't
+            // want to send it to L4 AI Fallback, because L4 is strictly for explicit reference recovery.
             setVoiceError(null);
             return;
           }
 
-          // L3 AI Fallback
+          // L4 AI Fallback — only fires if both parser and quote-match failed
           setIsRecovering(true);
           try {
             const res = await fetch('/api/ai/voice-recovery', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ transcript: text, translationId: activeTranslationId })
+              body: JSON.stringify({ transcript: contextualText, translationId: currentTransId })
             });
             const data = await res.json();
 
@@ -1198,8 +1257,14 @@ export default function Dashboard() {
                   <Mic className="w-3 h-3" /> {detectedVoiceScriptures.length} Scripture{detectedVoiceScriptures.length > 1 ? 's' : ''} Queued
                 </div>
                 {detectedVoiceScriptures.map((scripture, i) => (
-                  <div key={i} className={`border rounded-xl p-4 shadow-lg transition-all ${scripture.source === 'ai' ? 'bg-purple-950/40 border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.1)]' : scripture.confidence === 'medium' ? 'bg-orange-950/40 border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.1)]' : 'bg-blue-950/40 border-blue-500/30 shadow-[0_0_15px_rgba(37,99,235,0.1)]'}`}>
-                    <h3 className="font-bold text-lg text-white mb-1">{scripture.reference}</h3>
+                  <div key={i} className={`border rounded-xl p-4 shadow-lg transition-all ${scripture.source === 'quote' ? 'bg-teal-950/40 border-teal-500/30 shadow-[0_0_15px_rgba(20,184,166,0.1)]' : scripture.source === 'ai' ? 'bg-purple-950/40 border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.1)]' : scripture.confidence === 'medium' ? 'bg-orange-950/40 border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.1)]' : 'bg-blue-950/40 border-blue-500/30 shadow-[0_0_15px_rgba(37,99,235,0.1)]'}`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="font-bold text-lg text-white">{scripture.reference}</h3>
+                      {scripture.source === 'quote' && scripture.similarity && (
+                        <span className="text-xs font-bold text-teal-400 bg-teal-500/15 px-2 py-0.5 rounded-full border border-teal-500/20">{scripture.similarity}% match</span>
+                      )}
+                    </div>
+                    {scripture.source === 'quote' && <div className="text-xs text-teal-400/80 mb-2 flex items-center gap-1">🧠 Contextual Match</div>}
                     {scripture.source === 'ai' && <div className="text-xs text-purple-400/80 mb-2">AI recovered from speech</div>}
                     <p className="text-white/70 line-clamp-2 text-sm leading-relaxed mb-3 italic">"{scripture.text}"</p>
                     <div className="flex gap-2">
@@ -1219,7 +1284,7 @@ export default function Dashboard() {
                           setDetectedVoiceScriptures(prev => prev.filter((_, idx) => idx !== i));
                           if (detectedVoiceScriptures.length <= 1) setVoiceTranscript("");
                         }}
-                        className={`flex-1 text-white text-sm font-bold py-1.5 rounded-lg shadow-lg transition-all ${scripture.source === 'ai' ? 'bg-purple-600 hover:bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.3)]' : scripture.confidence === 'medium' ? 'bg-orange-600 hover:bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.3)]' : 'bg-blue-600 hover:bg-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.3)]'}`}
+                        className={`flex-1 text-white text-sm font-bold py-1.5 rounded-lg shadow-lg transition-all ${scripture.source === 'quote' ? 'bg-teal-600 hover:bg-teal-500 shadow-[0_0_15px_rgba(20,184,166,0.3)]' : scripture.source === 'ai' ? 'bg-purple-600 hover:bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.3)]' : scripture.confidence === 'medium' ? 'bg-orange-600 hover:bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.3)]' : 'bg-blue-600 hover:bg-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.3)]'}`}
                       >
                         Project
                       </button>

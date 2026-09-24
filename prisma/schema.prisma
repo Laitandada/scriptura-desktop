@@ -113,3 +113,16 @@ model CurrentState {
   textColor      String? @default("#ffffff")
   updatedAt      DateTime @updatedAt
 }
+
+model VerseMetadata {
+  id        String  @id @default(uuid())
+  bookName  String  // Canonical name e.g., "John"
+  chapter   Int
+  verse     Int
+  author    String? // e.g., "Paul", "David", "Moses"
+  speaker   String? // e.g., "Jesus", "God", "Peter"
+
+  @@unique([bookName, chapter, verse])
+  @@index([author])
+  @@index([speaker])
+}
