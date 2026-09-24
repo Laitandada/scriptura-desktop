@@ -19,10 +19,7 @@ export class BrowserSpeechProvider implements SpeechRecognitionProvider {
     this.isListening = true;
 
     try {
-      // 1. Get Microphone Access FIRST (prompts user for mic permission immediately)
-      this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-      // 2. Fetch Deepgram API Key securely from Next.js backend
+      // 1. Fetch Deepgram API Key securely from Next.js backend
       const res = await fetch('/api/voice/key');
       const { key } = await res.json();
       const apiKey = key?.trim();
@@ -30,8 +27,7 @@ export class BrowserSpeechProvider implements SpeechRecognitionProvider {
         throw new Error("Missing DEEPGRAM_API_KEY in .env");
       }
 
-      // 3. Initialize Deepgram Client & Connection
-      // Pass token in queryParams so browser WebSockets (which cannot send custom headers) can authenticate
+      // 2. Initialize Deepgram Client & Connection
       const client = new DeepgramClient({ apiKey });
       this.connection = await client.listen.v1.connect({
         model: "nova-3",
@@ -43,6 +39,33 @@ export class BrowserSpeechProvider implements SpeechRecognitionProvider {
           token: apiKey,
         },
       } as any);
+
+      // 3. When socket opens, request microphone access & start recording audio chunks
+      this.connection.on("open", async () => {
+        try {
+          if (!this.isListening) return;
+          this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          
+          this.mediaRecorder = new MediaRecorder(this.mediaStream, { mimeType: 'audio/webm' });
+          
+          this.mediaRecorder.addEventListener('dataavailable', (event) => {
+            if (event.data.size > 0 && this.connection && this.connection.socket) {
+              try {
+                this.connection.socket.send(event.data);
+              } catch (e) {
+                console.error("Error sending audio chunk to Deepgram:", e);
+              }
+            }
+          });
+          
+          this.mediaRecorder.start(250);
+        } catch (micErr: any) {
+          if (this.onErrorCallback) {
+            this.onErrorCallback(new Error("Microphone access denied. Please allow microphone access and try again."));
+          }
+          this.stop();
+        }
+      });
 
       // Listen for transcription results from Deepgram
       this.connection.on("message", (data: any) => {
@@ -60,24 +83,13 @@ export class BrowserSpeechProvider implements SpeechRecognitionProvider {
         }
       });
 
-      // Handle socket errors
+      // Handle socket errors silently during listening session, logging to console
       this.connection.on("error", (err: any) => {
         console.error("Deepgram connection error:", err);
-        if (this.onErrorCallback) {
-          let message = "Voice service error. Please try again.";
-          if (err instanceof Error) {
-            message = err.message;
-          } else if (err && typeof err === "object" && err.message) {
-            message = String(err.message);
-          }
-          this.onErrorCallback(new Error(message));
-        }
-        this.stop();
       });
 
       // Handle socket close
       this.connection.on("close", (event: any) => {
-        console.log("Deepgram connection closed:", event);
         if (this.isListening && this.onErrorCallback) {
           const code = event?.code;
           if (code && code !== 1000 && code !== 1001) {
@@ -87,38 +99,16 @@ export class BrowserSpeechProvider implements SpeechRecognitionProvider {
         this.stop();
       });
 
-      // 4. Start MediaRecorder immediately to record and stream audio chunks
-      if (this.mediaStream && this.isListening) {
-        this.mediaRecorder = new MediaRecorder(this.mediaStream, { mimeType: 'audio/webm' });
-        
-        this.mediaRecorder.addEventListener('dataavailable', (event) => {
-          if (event.data.size > 0 && this.connection && this.connection.socket) {
-            try {
-              // Send audio chunk directly to Deepgram socket
-              this.connection.socket.send(event.data);
-            } catch (e) {
-              console.error('Error sending audio chunk to Deepgram:', e);
-            }
-          }
-        });
-        
-        this.mediaRecorder.start(250);
-      }
+      // 4. Trigger connection and wait for open
+      this.connection.connect();
+      await this.connection.waitForOpen();
 
     } catch (err: any) {
       this.isListening = false;
       if (this.onErrorCallback) {
         let message = "Failed to start voice recognition.";
         if (err instanceof Error) {
-          if (err.name === "NotAllowedError" || err.message.includes("Permission")) {
-            message = "Microphone access denied. Please allow microphone access and try again.";
-          } else if (err.message.includes("fetch") || err.message.includes("network") || err.message.includes("Failed to fetch")) {
-            message = "Could not reach voice service — check your internet connection.";
-          } else if (err.message.includes("DEEPGRAM_API_KEY") || err.message.includes("Missing")) {
-            message = "Voice service is not configured (missing API key).";
-          } else {
-            message = err.message;
-          }
+          message = err.message;
         }
         this.onErrorCallback(new Error(message));
       }
