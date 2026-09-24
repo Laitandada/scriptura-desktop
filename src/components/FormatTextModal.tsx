@@ -28,6 +28,7 @@ export function FormatTextModal({ isOpen, onClose }: FormatTextModalProps) {
 
   const settings = state.settings || {};
   const verseSettings: VerseSettings = settings.verseSettings || {
+    fontFamily: 'var(--font-inter)',
     fontSize: 90,
     alignment: 'center',
     justification: 'justify',
@@ -110,6 +111,20 @@ export function FormatTextModal({ isOpen, onClose }: FormatTextModalProps) {
     { id: 'black', label: 'Blk' },
   ];
 
+  const fontFamilies = [
+    { id: 'var(--font-inter)', label: 'Inter (Modern)' },
+    { id: 'var(--font-montserrat)', label: 'Montserrat (Contemporary)' },
+    { id: 'var(--font-roboto)', label: 'Roboto (Neutral)' },
+    { id: 'var(--font-open-sans)', label: 'Open Sans (Clean)' },
+    { id: 'var(--font-lato)', label: 'Lato (Warm)' },
+    { id: 'var(--font-merriweather)', label: 'Merriweather (Traditional)' },
+    { id: 'var(--font-libre)', label: 'Libre Baskerville (Classic)' },
+    { id: 'var(--font-source-sans)', label: 'Source Sans 3 (Readable)' },
+    { id: 'var(--font-noto-sans)', label: 'Noto Sans (Universal)' },
+    { id: 'var(--font-noto-serif)', label: 'Noto Serif (Universal)' },
+    { id: 'var(--font-playfair)', label: 'Playfair Display (Elegant)' },
+  ];
+
   const shadows: { id: TextShadowStyle; label: string }[] = [
     { id: 'none', label: 'None' },
     { id: 'subtle', label: 'Subt' },
@@ -157,20 +172,40 @@ export function FormatTextModal({ isOpen, onClose }: FormatTextModalProps) {
               Format Verse Text
             </h3>
 
-            {/* Global: Overlay Opacity */}
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">Background Dim (Opacity)</label>
-                <span className="text-xs font-mono font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
-                  {settings.overlayOpacity ?? 50}%
-                </span>
+            {/* Row 1: Opacity & Font Family */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Global: Overlay Opacity */}
+              <div className="flex flex-col justify-center">
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">Background Dim</label>
+                  <span className="text-xs font-mono font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20">
+                    {settings.overlayOpacity ?? 50}%
+                  </span>
+                </div>
+                <input
+                  type="range" min={0} max={100} step={5}
+                  value={settings.overlayOpacity ?? 50}
+                  onChange={(e) => updateGlobalSetting('overlayOpacity', parseInt(e.target.value))}
+                  className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(59,130,246,0.8)]"
+                />
               </div>
-              <input
-                type="range" min={0} max={100} step={5}
-                value={settings.overlayOpacity ?? 50}
-                onChange={(e) => updateGlobalSetting('overlayOpacity', parseInt(e.target.value))}
-                className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(59,130,246,0.8)]"
-              />
+
+              {/* Verse Font Family */}
+              <div>
+                <label className="block text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Font Style</label>
+                <select
+                  value={verseSettings.fontFamily || 'var(--font-inter)'}
+                  onChange={(e) => updateVerseSetting('fontFamily', e.target.value)}
+                  className="w-full bg-black/50 border border-white/10 rounded-lg text-sm font-semibold text-white px-3 py-1.5 outline-none focus:border-blue-500 transition-colors"
+                  style={{ fontFamily: verseSettings.fontFamily }}
+                >
+                  {fontFamilies.map((font) => (
+                    <option key={font.id} value={font.id} style={{ fontFamily: font.id }}>
+                      {font.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Verse Alignment */}
@@ -283,6 +318,14 @@ export function FormatTextModal({ isOpen, onClose }: FormatTextModalProps) {
                       style={{ backgroundColor: color }}
                     />
                   ))}
+                  <div className="relative w-6 h-6 rounded-full overflow-hidden border-2 border-white/20 hover:scale-105 transition-transform shrink-0" style={{ background: 'conic-gradient(red, yellow, lime, aqua, blue, magenta, red)' }}>
+                    <input 
+                      type="color" 
+                      value={verseSettings.textColor || '#ffffff'}
+                      onChange={(e) => updateVerseSetting('textColor', e.target.value)}
+                      className="absolute inset-[-50%] w-[200%] h-[200%] opacity-0 cursor-pointer" 
+                    />
+                  </div>
                 </div>
               </div>
               <div>
@@ -295,6 +338,14 @@ export function FormatTextModal({ isOpen, onClose }: FormatTextModalProps) {
                       style={{ backgroundColor: color }}
                     />
                   ))}
+                  <div className="relative w-6 h-6 rounded-full overflow-hidden border-2 border-white/20 hover:scale-105 transition-transform shrink-0" style={{ background: 'conic-gradient(red, yellow, lime, aqua, blue, magenta, red)' }}>
+                    <input 
+                      type="color" 
+                      value={verseSettings.outlineColor || '#000000'}
+                      onChange={(e) => updateVerseSetting('outlineColor', e.target.value)}
+                      className="absolute inset-[-50%] w-[200%] h-[200%] opacity-0 cursor-pointer" 
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -408,6 +459,14 @@ export function FormatTextModal({ isOpen, onClose }: FormatTextModalProps) {
                       style={{ backgroundColor: color }}
                     />
                   ))}
+                  <div className="relative w-6 h-6 rounded-full overflow-hidden border-2 border-white/20 hover:scale-105 transition-transform shrink-0" style={{ background: 'conic-gradient(red, yellow, lime, aqua, blue, magenta, red)' }}>
+                    <input 
+                      type="color" 
+                      value={refSettings.textColor || '#ffffff'}
+                      onChange={(e) => updateRefSetting('textColor', e.target.value)}
+                      className="absolute inset-[-50%] w-[200%] h-[200%] opacity-0 cursor-pointer" 
+                    />
+                  </div>
                 </div>
               </div>
               <div>
@@ -420,6 +479,14 @@ export function FormatTextModal({ isOpen, onClose }: FormatTextModalProps) {
                       style={{ backgroundColor: color }}
                     />
                   ))}
+                  <div className="relative w-6 h-6 rounded-full overflow-hidden border-2 border-white/20 hover:scale-105 transition-transform shrink-0" style={{ background: 'conic-gradient(red, yellow, lime, aqua, blue, magenta, red)' }}>
+                    <input 
+                      type="color" 
+                      value={refSettings.outlineColor || '#000000'}
+                      onChange={(e) => updateRefSetting('outlineColor', e.target.value)}
+                      className="absolute inset-[-50%] w-[200%] h-[200%] opacity-0 cursor-pointer" 
+                    />
+                  </div>
                 </div>
               </div>
             </div>

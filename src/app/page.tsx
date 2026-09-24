@@ -273,6 +273,7 @@ export default function Dashboard() {
       if (e.data?.type === 'PONG') {
         const wasDisconnected = Date.now() - lastPong >= 2500;
         lastPong = Date.now();
+        setIsProjectorLive(true); // <--- Update state on heartbeat
         // If projector just came online/reconnected, sync active state immediately
         if (wasDisconnected) {
           channel.postMessage({ type: 'SYNC_STATE', state: usePresentationStore.getState().state });
@@ -285,7 +286,9 @@ export default function Dashboard() {
 
     const interval = setInterval(() => {
       channel.postMessage({ type: 'PING' });
-      setIsProjectorLive(Date.now() - lastPong < 2500);
+      if (Date.now() - lastPong >= 2500) {
+        setIsProjectorLive(false); // <--- Only force false if it actually timed out
+      }
     }, 1000);
 
     return () => {
@@ -571,10 +574,20 @@ export default function Dashboard() {
           // L3: Scripture Intelligence — Quotation Matching
           // Detects when preacher quotes or paraphrases scripture without citing reference.
           // Uses local DB trigram similarity (zero LLM tokens, ~17ms).
+          //
+          // Three signals, any one is enough to trigger:
+          //   1. Attribution: Speaker + Quotation cue together ("Paul said...", "Jesus taught...")
+          //   2. Direct Quotation: Quotation marks detected in speech
+          //   3. Structural: "said/wrote/declared...that/the/we/you" pattern
           const hasQuotationCue = /\b(said|says|wrote|written|declared|commanded|promised|taught|asked|answered|cried|prayed|sang|spoke|speaks)\b/i.test(contextualText);
           const hasSpeakerCue = /\b(jesus|christ|paul|peter|david|moses|solomon|isaiah|jeremiah|god|lord|spirit|apostle|prophet|psalmist|john|james)\b/i.test(contextualText);
+          const hasQuotationMarkers = /["""']/.test(contextualText);
+          const hasQuotationStructure = /\b(said|says|wrote|declared|commanded|promised|taught)\b.{0,80}\b(that|the|we|you|he|she|it|i)\b/i.test(contextualText);
           const wordCount = contextualText.trim().split(/\s+/).length;
-          const looksLikeQuotation = (hasQuotationCue && wordCount >= 6) || (hasSpeakerCue && wordCount >= 6) || wordCount >= 10;
+
+          const looksLikeAttribution = wordCount >= 6 && hasSpeakerCue && hasQuotationCue;
+          const looksLikeDirectQuotation = wordCount >= 6 && hasQuotationMarkers;
+          const looksLikeQuotation = looksLikeDirectQuotation || looksLikeAttribution || hasQuotationStructure;
 
           // Remove diagnostic toasts now that we found the bug
           if (looksLikeQuotation && currentTransId) {
@@ -708,6 +721,7 @@ export default function Dashboard() {
       if (typeof window !== 'undefined' && window.scriptura?.outputs) {
         try {
           await window.scriptura.outputs.closeMain();
+          setIsProjectorLive(false);
         } catch (err) {
           console.error("Failed to close native projector:", err);
         }
@@ -717,11 +731,13 @@ export default function Dashboard() {
       if (presentationWindowRef.current && !presentationWindowRef.current.closed) {
         presentationWindowRef.current.close();
         presentationWindowRef.current = null;
+        setIsProjectorLive(false);
       }
       return;
     }
 
     // --- Toggle ON: Open the projector ---
+    setIsProjectorLive(true);
     const currentState = usePresentationStore.getState().state;
     const channel = new BroadcastChannel('scriptura-presentation-sync');
     channel.postMessage({ type: 'SYNC_STATE', state: currentState });
@@ -1200,7 +1216,7 @@ export default function Dashboard() {
         <div className="lg:col-span-4 flex flex-col gap-6 h-full overflow-hidden">
 
           {/* Voice Module */}
-          <section className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-2xl flex flex-col gap-4 shrink-0">
+          <section className="relative z-30 bg-white/5 border border-white/10 rounded-2xl p-5 shadow-2xl flex flex-col gap-4 shrink-0">
             <div className="flex justify-between items-center">
               <h2 className="text-sm font-semibold uppercase tracking-widest text-white/50 flex items-center gap-2">
                 <Mic className="w-4 h-4" />
@@ -1252,46 +1268,60 @@ export default function Dashboard() {
             )}
 
             {detectedVoiceScriptures.length > 0 && (
-              <div className="flex flex-col gap-3">
-                <div className="text-xs font-bold text-purple-400 flex items-center gap-1 bg-purple-950/30 w-fit px-2 py-1 rounded border border-purple-500/20">
-                  <Mic className="w-3 h-3" /> {detectedVoiceScriptures.length} Scripture{detectedVoiceScriptures.length > 1 ? 's' : ''} Queued
-                </div>
-                {detectedVoiceScriptures.map((scripture, i) => (
-                  <div key={i} className={`border rounded-xl p-4 shadow-lg transition-all ${scripture.source === 'quote' ? 'bg-teal-950/40 border-teal-500/30 shadow-[0_0_15px_rgba(20,184,166,0.1)]' : scripture.source === 'ai' ? 'bg-purple-950/40 border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.1)]' : scripture.confidence === 'medium' ? 'bg-orange-950/40 border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.1)]' : 'bg-blue-950/40 border-blue-500/30 shadow-[0_0_15px_rgba(37,99,235,0.1)]'}`}>
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-bold text-lg text-white">{scripture.reference}</h3>
-                      {scripture.source === 'quote' && scripture.similarity && (
-                        <span className="text-xs font-bold text-teal-400 bg-teal-500/15 px-2 py-0.5 rounded-full border border-teal-500/20">{scripture.similarity}% match</span>
-                      )}
-                    </div>
-                    {scripture.source === 'quote' && <div className="text-xs text-teal-400/80 mb-2 flex items-center gap-1">🧠 Contextual Match</div>}
-                    {scripture.source === 'ai' && <div className="text-xs text-purple-400/80 mb-2">AI recovered from speech</div>}
-                    <p className="text-white/70 line-clamp-2 text-sm leading-relaxed mb-3 italic">"{scripture.text}"</p>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          setDetectedVoiceScriptures(prev => prev.filter((_, idx) => idx !== i));
-                          if (detectedVoiceScriptures.length <= 1) setVoiceTranscript("");
-                        }}
-                        className="flex-1 bg-white/10 hover:bg-white/20 text-white text-sm font-medium py-1.5 rounded-lg transition-colors"
-                      >
-                        Dismiss
-                      </button>
-                      <button
-                        onClick={() => {
-                          projectScripture(scripture.reference, scripture.translation || activeTranslationId || "WEB", scripture.text, scripture.verseRangeEnd ?? undefined);
-                          setTimeout(() => { if (activeSessionId) loadHistory(activeSessionId) }, 500);
-                          setDetectedVoiceScriptures(prev => prev.filter((_, idx) => idx !== i));
-                          if (detectedVoiceScriptures.length <= 1) setVoiceTranscript("");
-                        }}
-                        className={`flex-1 text-white text-sm font-bold py-1.5 rounded-lg shadow-lg transition-all ${scripture.source === 'quote' ? 'bg-teal-600 hover:bg-teal-500 shadow-[0_0_15px_rgba(20,184,166,0.3)]' : scripture.source === 'ai' ? 'bg-purple-600 hover:bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.3)]' : scripture.confidence === 'medium' ? 'bg-orange-600 hover:bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.3)]' : 'bg-blue-600 hover:bg-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.3)]'}`}
-                      >
-                        Project
-                      </button>
-                    </div>
+              <>
+                {/* Invisible backdrop to dismiss popover when clicking anywhere outside */}
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => {
+                    setDetectedVoiceScriptures([]);
+                    setVoiceTranscript("");
+                  }} 
+                />
+                
+                {/* Popover Card Container */}
+                <div className="absolute top-[calc(100%+0.5rem)] left-0 w-full z-50 flex flex-col gap-3 bg-gray-950/95 backdrop-blur-xl border border-white/10 p-5 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.7)] max-h-[50vh] overflow-y-auto">
+                  <div className="text-xs font-bold text-purple-400 flex items-center gap-1 bg-purple-950/30 w-fit px-2 py-1 rounded border border-purple-500/20">
+                    <Mic className="w-3 h-3" /> {detectedVoiceScriptures.length} Scripture{detectedVoiceScriptures.length > 1 ? 's' : ''} Queued
                   </div>
-                ))}
-              </div>
+                  {detectedVoiceScriptures.map((scripture, i) => (
+                    <div key={i} className={`border rounded-xl p-4 shadow-lg transition-all ${scripture.source === 'quote' ? 'bg-teal-950/40 border-teal-500/30 shadow-[0_0_15px_rgba(20,184,166,0.1)]' : scripture.source === 'ai' ? 'bg-purple-950/40 border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.1)]' : scripture.confidence === 'medium' ? 'bg-orange-950/40 border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.1)]' : 'bg-blue-950/40 border-blue-500/30 shadow-[0_0_15px_rgba(37,99,235,0.1)]'}`}>
+                      <div className="flex items-center justify-between mb-1">
+                        <h3 className="font-bold text-lg text-white">{scripture.reference}</h3>
+                        {scripture.source === 'quote' && scripture.similarity && (
+                          <span className="text-xs font-bold text-teal-400 bg-teal-500/15 px-2 py-0.5 rounded-full border border-teal-500/20">{scripture.similarity}% match</span>
+                        )}
+                      </div>
+                      {scripture.source === 'quote' && <div className="text-xs text-teal-400/80 mb-2 flex items-center gap-1">🧠 Contextual Match</div>}
+                      {scripture.source === 'ai' && <div className="text-xs text-purple-400/80 mb-2">AI recovered from speech</div>}
+                      <p className="text-white/70 line-clamp-2 text-sm leading-relaxed mb-3 italic">"{scripture.text}"</p>
+                      <div className="flex gap-2 relative z-50">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDetectedVoiceScriptures(prev => prev.filter((_, idx) => idx !== i));
+                            if (detectedVoiceScriptures.length <= 1) setVoiceTranscript("");
+                          }}
+                          className="flex-1 bg-white/10 hover:bg-white/20 text-white text-sm font-medium py-1.5 rounded-lg transition-colors"
+                        >
+                          Dismiss
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            projectScripture(scripture.reference, scripture.translation || activeTranslationId || "WEB", scripture.text, scripture.verseRangeEnd ?? undefined);
+                            setTimeout(() => { if (activeSessionId) loadHistory(activeSessionId) }, 500);
+                            setDetectedVoiceScriptures(prev => prev.filter((_, idx) => idx !== i));
+                            if (detectedVoiceScriptures.length <= 1) setVoiceTranscript("");
+                          }}
+                          className={`flex-1 text-white text-sm font-bold py-1.5 rounded-lg shadow-lg transition-all ${scripture.source === 'quote' ? 'bg-teal-600 hover:bg-teal-500 shadow-[0_0_15px_rgba(20,184,166,0.3)]' : scripture.source === 'ai' ? 'bg-purple-600 hover:bg-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.3)]' : scripture.confidence === 'medium' ? 'bg-orange-600 hover:bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.3)]' : 'bg-blue-600 hover:bg-blue-500 shadow-[0_0_15px_rgba(37,99,235,0.3)]'}`}
+                        >
+                          Project
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </section>
 
@@ -1527,14 +1557,16 @@ export default function Dashboard() {
             <div className="grid grid-cols-2 gap-2 mb-2 shrink-0">
               <button
                 onClick={() => setIsFormatModalOpen(true)}
-                className="bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-400 font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 text-sm group"
+                disabled={state.type === 'presentation'}
+                className={`border font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2 text-sm group ${state.type === 'presentation' ? 'bg-blue-600/10 border-blue-500/10 text-blue-400/30 cursor-not-allowed' : 'bg-blue-600/20 hover:bg-blue-600/30 border-blue-500/30 text-blue-400'}`}
               >
-                <Sliders className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                <Sliders className={`w-4 h-4 ${state.type === 'presentation' ? '' : 'group-hover:scale-110'} transition-transform`} />
                 Format Text
               </button>
               <button
                 onClick={clearScreen}
-                className="bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium py-2.5 rounded-xl transition-all text-sm"
+                disabled={state.type === 'presentation'}
+                className={`border font-medium py-2.5 rounded-xl transition-all text-sm ${state.type === 'presentation' ? 'bg-white/5 border-white/5 text-white/20 cursor-not-allowed' : 'bg-white/5 hover:bg-white/10 border-white/10 text-white'}`}
               >
                 Clear Text (Esc)
               </button>

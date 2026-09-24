@@ -12,6 +12,7 @@ export type ReferencePosition = 'top-left' | 'top-center' | 'top-right' | 'botto
 export type TextJustification = 'left' | 'center' | 'right' | 'justify';
 
 export interface VerseSettings {
+  fontFamily: string;
   fontSize: number;
   alignment: TextAlignment;
   justification?: TextJustification;
@@ -85,6 +86,7 @@ const defaultState: PresentationStateData = {
     overlayOpacity: 50,
     showReference: true,
     verseSettings: {
+      fontFamily: 'var(--font-inter)',
       fontSize: 90,
       alignment: 'center',
       justification: 'justify',

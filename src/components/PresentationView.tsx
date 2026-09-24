@@ -327,8 +327,9 @@ export function PresentationView({
           <div ref={contentRef} className="flex flex-col max-w-full" style={{ gap: '10px' }}>
             {showReference && isRefTop && (
               <h1
-                className={`tracking-widest uppercase font-serif shrink-0 m-0 ${refAlignClass}`}
+                className={`tracking-widest uppercase shrink-0 m-0 ${refAlignClass}`}
                 style={{
+                  fontFamily: verseSettings.fontFamily || 'var(--font-inter)',
                   fontSize: `${effectiveRefFontSize}px`,
                   fontWeight: fontWeightMap[refSettings.fontWeight] || 700,
                   color: refSettings.textColor,
@@ -340,8 +341,9 @@ export function PresentationView({
             )}
 
             <p
-              className={`font-serif leading-relaxed m-0 ${verseJustifyClass} ${verseSettings.justification !== 'justify' ? 'text-balance' : ''}`}
+              className={`leading-relaxed m-0 ${verseJustifyClass} ${verseSettings.justification !== 'justify' ? 'text-balance' : ''}`}
               style={{
+                fontFamily: verseSettings.fontFamily || 'var(--font-inter)',
                 fontSize: `${effectiveVerseFontSize}px`,
                 fontWeight: fontWeightMap[verseSettings.fontWeight] || 700,
                 color: verseSettings.textColor,
@@ -353,8 +355,9 @@ export function PresentationView({
 
             {showReference && !isRefTop && (
               <h1
-                className={`tracking-widest uppercase font-serif shrink-0 m-0 ${refAlignClass}`}
+                className={`tracking-widest uppercase shrink-0 m-0 ${refAlignClass}`}
                 style={{
+                  fontFamily: verseSettings.fontFamily || 'var(--font-inter)',
                   fontSize: `${effectiveRefFontSize}px`,
                   fontWeight: fontWeightMap[refSettings.fontWeight] || 700,
                   color: refSettings.textColor,

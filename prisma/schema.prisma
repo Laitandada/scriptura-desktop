@@ -82,6 +82,7 @@ model ProjectionEvent {
   media          Media?              @relation(fields: [mediaId], references: [id], onDelete: SetNull)
   backgroundType String?             // "image", "video", "none"
   backgroundUrl  String?
+  fontFamily     String?             @default("var(--font-inter)")
   fontSize       Int?
   overlayOpacity Int?
   showReference  Boolean?
@@ -102,6 +103,7 @@ model CurrentState {
   text           String?
   backgroundType String? // "image", "video", "none"
   backgroundUrl  String?
+  fontFamily     String? @default("var(--font-inter)")
   fontSize       Int     @default(90)
   overlayOpacity Int     @default(50)
   showReference  Boolean @default(true)

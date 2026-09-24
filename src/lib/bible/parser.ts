@@ -389,23 +389,8 @@ export async function parseReferences(
         }
       } else {
         // Ambiguous number (e.g. "let's jump to 20")
-        // Try as a verse in current chapter first
-        const m = numberBlockText.match(/(\d+)/);
-        if (m) {
-          const num = parseInt(m[1]);
-          const isValidVerse = await validateRef(context.book, context.chapter, num);
-          if (isValidVerse) {
-            results.push({ book: context.book, chapter: context.chapter, verseStart: num, confidence: "low", originalBookText: context.book, raw: text });
-            blockResolved = true;
-          } else {
-            // Try as a new chapter in current book
-            const isValidChapter = await validateRef(context.book, num);
-            if (isValidChapter) {
-              results.push({ book: context.book, chapter: num, isDefaultedVerse: true, confidence: "low", originalBookText: context.book, raw: text });
-              blockResolved = true;
-            }
-          }
-        }
+        // REMOVED: We no longer auto-project bare numbers without explicit "verse" or "chapter" cues
+        // This prevents massive amounts of false-positive searches when the speaker casually says numbers.
       }
     }
   }
